@@ -1,9 +1,9 @@
 # AI Evolution Timeline
 
 Educational Next.js 14 App (TypeScript + Tailwind) showcasing AI's evolution from rule-based
-systems to multi-agent architectures. The app is driven by static data in `/data/timeline.ts`.
+systems to multi-agent architectures. The app is driven by static data in `/data/timeline.ts` and includes comprehensive SEO optimization.
 
-Quick start
+## Quick start
 
 1. Install dependencies
 
@@ -18,14 +18,81 @@ npm install
 npm run dev
 ```
 
-Notes
-- The app uses the App Router (`app/`) and TypeScript.
-- UI is styled with Tailwind CSS. Install `tailwindcss`, `postcss`, and `autoprefixer` as devDeps.
-- Add `shadcn/ui` components or other UI libraries as desired.
-- Icons use `lucide-react`.
+3. Open http://localhost:3000 in your browser
 
-Extending the timeline
-- Edit `/data/timeline.ts` to add or modify timeline entries.
+## Features
+
+- **Interactive AI Evolution Timeline** — Browse milestones from 1950s to 2030s with expandable details
+- **Filter & Search** — Filter by technology category, search across year, title, industry, job role
+- **Industry Adoption Waves** — See how 8 industries adopted and use AI
+- **Jobs Affected Analysis** — Understand which roles are highly exposed, moderately exposed, AI-augmented, or resilient
+- **What Comes Next** — Overview of AI governance, traceability, and human-in-the-loop systems
+- **SEO Optimized** — Metadata, Open Graph, JSON-LD structured data, semantic HTML, robots.txt
+
+## Tech Stack
+
+- Next.js 14 with App Router and TypeScript
+- Tailwind CSS for styling
+- Lucide React for icons
+- Static data driven (no database required)
+
+## Project Structure
+
+```
+app/
+  layout.tsx          # Root layout with SEO metadata, Open Graph, JSON-LD
+  page.tsx            # Homepage with all sections
+  globals.css         # Tailwind directives
+components/
+  Header.tsx          # Main heading (H1)
+  Timeline.tsx        # Interactive timeline with filters & search
+  IndustryWaves.tsx   # Industry adoption cards
+  JobsAffected.tsx    # Job impact groups
+  WhatComesNext.tsx   # Future directions CTA
+data/
+  timeline.ts         # 12 AI milestones from 1950s–2030s
+  industries.ts       # 8 industry cards with early/current/future AI use
+  jobs.ts             # 4 job exposure groups with example roles
+public/
+  robots.txt          # SEO-friendly robot directives
+```
+
+## Extending
+
+- Edit `/data/timeline.ts` to add or modify AI milestones
+- Edit `/data/industries.ts` to update industry adoption stories
+- Edit `/data/jobs.ts` to adjust job exposure groups
+
+## Deployment
+
+Build for production:
+
+```bash
+npm run build
+npm start
+```
+
+Or deploy to Vercel:
+
+```bash
+vercel deploy
+```
+
+## SEO Features
+
+- **Semantic HTML** — Proper H1/H2 hierarchy, section landmarks with aria-labelledby
+- **Metadata** — Title, description, keywords, author in layout
+- **Open Graph** — og:title, og:description, og:type, og:url for social sharing
+- **Twitter Cards** — twitter:card, twitter:title, twitter:description
+- **JSON-LD** — EducationalWebpage schema for search engine understanding
+- **Robots.txt** — Guides crawlers and references sitemap
+- **Accessibility** — ARIA labels, semantic roles (contentinfo), keyboard navigation
+
+## Notes
+
+This is a free educational feature of the Future Trace web app. Use it as a base for building
+AI literacy resources, training materials, or educational content at scale.
+
 # Future Trace
 
 **Future Trace** is an AI-powered career intelligence and workforce transition platform that helps people understand how AI is changing industries, how exposed their current role is to automation, and what career paths they can move toward next.
