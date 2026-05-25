@@ -1,5 +1,6 @@
 import Header from '../components/Header'
 import Timeline from '../components/Timeline'
+import IndustryWaves from '../components/IndustryWaves'
 
 export default function HomePage() {
   return (
@@ -18,8 +19,10 @@ export default function HomePage() {
 
       <Timeline />
 
+      <IndustryWaves />
+
       <footer className="mt-12 text-sm text-slate-500">
-        <p>Static-data driven educational sample — use the data in /data/timeline.ts to extend.</p>
+        <p>Static-data driven educational sample — edit `/data/timeline.ts` and `/data/industries.ts` to extend.</p>
       </footer>
     </>
   )
