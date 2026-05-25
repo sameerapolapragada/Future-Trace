@@ -20,15 +20,15 @@ const iconFor = (id: string) => {
 
 export default function JobsAffected() {
   return (
-    <section aria-labelledby="jobs-affected" className="mt-12">
+    <section aria-labelledby="jobs-affected" className="mb-12">
       <div className="mb-6">
-        <h2 id="jobs-affected" className="text-2xl font-bold">Jobs Affected by AI Evolution</h2>
+        <h2 id="jobs-affected" className="text-2xl sm:text-3xl font-bold text-slate-900">Jobs Affected by AI Evolution</h2>
         <p className="mt-2 text-slate-600">Grouped view of roles based on their likely exposure to AI automation and augmentation.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {jobGroups.map((g) => (
-          <article key={g.id} className="bg-white border border-slate-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
+          <article key={g.id} className="bg-white border border-slate-100 rounded-lg p-5 shadow-sm hover:shadow-md transition-all hover:border-slate-200">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-md bg-slate-50 flex items-center justify-center border border-slate-100">
                 {iconFor(g.id)}

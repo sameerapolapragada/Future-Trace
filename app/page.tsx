@@ -19,9 +19,9 @@ export default function HomePage() {
 
       <Header />
 
-      <section aria-labelledby="intro-section" className="mb-8">
-        <h2 id="intro-section" className="text-2xl font-bold">From Rules to Autonomous Systems</h2>
-        <p className="mt-3 text-slate-700">
+      <section aria-labelledby="intro-section" className="mb-12">
+        <h2 id="intro-section" className="text-2xl sm:text-3xl font-bold text-slate-900">From Rules to Autonomous Systems</h2>
+        <p className="mt-3 text-slate-600 leading-relaxed max-w-2xl">
           This timeline explains the evolution of artificial intelligence in approachable terms.
           Starting with handcrafted rule-based systems, we move through probabilistic learning,
           deep neural networks, transformer-based models, retrieval-augmented generation (RAG),
@@ -29,7 +29,10 @@ export default function HomePage() {
         </p>
       </section>
 
-      <Timeline />
+      <section aria-labelledby="timeline-section" className="mb-12">
+        <h2 id="timeline-section" className="text-2xl sm:text-3xl font-bold text-slate-900 mb-6">Timeline</h2>
+        <Timeline />
+      </section>
 
       <IndustryWaves />
 
@@ -37,8 +40,9 @@ export default function HomePage() {
 
       <WhatComesNext />
 
-      <footer className="mt-12 text-sm text-slate-500" role="contentinfo">
-        <p>Static-data driven educational sample — edit `/data/timeline.ts` and `/data/industries.ts` to extend.</p>
+      <footer className="mt-16 pt-8 border-t border-slate-200 text-sm text-slate-500" role="contentinfo">
+        <p className="mb-2">Static-data driven educational resource. Edit data files to extend.</p>
+        <p className="text-xs">© 2026 Future Trace. AI Evolution Timeline is a free educational feature.</p>
       </footer>
     </>
   )

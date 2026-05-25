@@ -33,18 +33,18 @@ export default function WhatComesNext() {
   ]
 
   return (
-    <section aria-labelledby="what-comes-next" className="mt-12">
+    <section aria-labelledby="what-comes-next" className="mb-12">
       <div className="mb-6">
-        <h2 id="what-comes-next" className="text-2xl font-bold">What Comes Next?</h2>
+        <h2 id="what-comes-next" className="text-2xl sm:text-3xl font-bold text-slate-900">What Comes Next?</h2>
         <p className="mt-2 text-slate-600">Overview of the next phase in AI evolution and the practical priorities ahead.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
+        <div className="space-y-3">
           {items.map((it) => (
-            <div key={it.title} className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm">
-              <h3 className="font-semibold">{it.title}</h3>
-              <p className="mt-1 text-slate-600 text-sm">{it.desc}</p>
+            <div key={it.title} className="bg-white border border-slate-100 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-slate-200 transition-all">
+              <h3 className="font-semibold text-slate-900">{it.title}</h3>
+              <p className="mt-1 text-slate-600 text-sm leading-relaxed">{it.desc}</p>
             </div>
           ))}
         </div>

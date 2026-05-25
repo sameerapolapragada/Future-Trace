@@ -28,15 +28,15 @@ const iconFor = (id: string) => {
 
 export default function IndustryWaves() {
   return (
-    <section aria-labelledby="industry-waves" className="mt-12">
+    <section aria-labelledby="industry-waves" className="mb-12">
       <div className="mb-6">
-        <h2 id="industry-waves" className="text-2xl font-bold">Industry Adoption Waves</h2>
+        <h2 id="industry-waves" className="text-2xl sm:text-3xl font-bold text-slate-900">Industry Adoption Waves</h2>
         <p className="mt-2 text-slate-600">How different industries adopted AI and what to expect next.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {industries.map((it: IndustryCard) => (
-          <article key={it.id} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-md hover:shadow-lg transition-shadow">
+          <article key={it.id} className="bg-white border border-slate-100 rounded-lg p-5 shadow-sm hover:shadow-md transition-all hover:border-slate-200">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100">
                 {iconFor(it.id)}

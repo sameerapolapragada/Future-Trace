@@ -1,18 +1,9 @@
-import Link from 'next/link'
-
 export default function Header() {
   return (
-    <header className="mb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-extrabold">AI Evolution Timeline</h1>
-          <p className="text-sm text-slate-600">A concise, educational walkthrough of how AI has progressed.</p>
-        </div>
-        <nav>
-          <Link href="#timeline" className="text-sm text-sky-600 hover:underline">
-            Explore timeline
-          </Link>
-        </nav>
+    <header className="mb-8" role="banner">
+      <div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">AI Evolution Timeline</h2>
+        <p className="mt-2 text-slate-600">Explore how artificial intelligence evolved from symbolic systems to autonomous multi-agent platforms.</p>
       </div>
     </header>
   )
