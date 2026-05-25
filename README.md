@@ -1,3 +1,31 @@
+# AI Evolution Timeline
+
+Educational Next.js 14 App (TypeScript + Tailwind) showcasing AI's evolution from rule-based
+systems to multi-agent architectures. The app is driven by static data in `/data/timeline.ts`.
+
+Quick start
+
+1. Install dependencies
+
+```bash
+cd /workspaces/Future-Trace
+npm install
+```
+
+2. Run dev server
+
+```bash
+npm run dev
+```
+
+Notes
+- The app uses the App Router (`app/`) and TypeScript.
+- UI is styled with Tailwind CSS. Install `tailwindcss`, `postcss`, and `autoprefixer` as devDeps.
+- Add `shadcn/ui` components or other UI libraries as desired.
+- Icons use `lucide-react`.
+
+Extending the timeline
+- Edit `/data/timeline.ts` to add or modify timeline entries.
 # Future Trace
 
 **Future Trace** is an AI-powered career intelligence and workforce transition platform that helps people understand how AI is changing industries, how exposed their current role is to automation, and what career paths they can move toward next.
