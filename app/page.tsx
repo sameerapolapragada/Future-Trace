@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Hero from '../components/Hero'
 import Header from '../components/Header'
 import Timeline from '../components/Timeline'
 import IndustryWaves from '../components/IndustryWaves'
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 export default function HomePage() {
   return (
     <>
+      <Hero />
+
       <Header />
 
       <section aria-labelledby="intro-section" className="mb-8">
