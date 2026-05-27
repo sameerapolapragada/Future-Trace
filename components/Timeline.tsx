@@ -10,7 +10,6 @@ import {
   Layers,
   FileText,
   Database,
-  Robot,
   Users
 } from 'lucide-react'
 
@@ -22,7 +21,7 @@ function categoryIcon(category: string) {
   if (c.includes('transform')) return <Layers className="w-5 h-5" />
   if (c.includes('generat') || c.includes('llm')) return <FileText className="w-5 h-5" />
   if (c.includes('retriev') || c.includes('rag')) return <Database className="w-5 h-5" />
-  if (c.includes('agentic') || c.includes('agent')) return <Robot className="w-5 h-5" />
+  if (c.includes('agentic') || c.includes('agent')) return <Brain className="w-5 h-5" />
   if (c.includes('multi')) return <Users className="w-5 h-5" />
   return <Cpu className="w-5 h-5" />
 }
