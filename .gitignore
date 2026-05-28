@@ -38,9 +38,14 @@ yarn-error.log*
 
 # Dev branch only — do not commit from Web-Dev
 /mobile/
-# Supabase schema/migrations stay local until explicitly published to git
-/supabase/
 /prisma/
+
+# Supabase: commit migrations (Git → Supabase integration); ignore local CLI noise
+supabase/.branches
+supabase/.temp
+supabase/functions/
+supabase/scripts/
+supabase/.env
 
 # TypeScript incremental build cache
 tsconfig.tsbuildinfo
