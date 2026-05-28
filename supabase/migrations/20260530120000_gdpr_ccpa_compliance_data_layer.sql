@@ -26,24 +26,50 @@ end;
 $$;
 
 -- -----------------------------------------------------------------------------
--- Tear down legacy objects (safe if this is a first run)
+-- Tear down legacy objects (safe on empty DB — tables may not exist yet)
 -- -----------------------------------------------------------------------------
 drop trigger if exists on_auth_user_created on auth.users;
-drop trigger if exists profiles_updated_at on public.profiles;
-drop trigger if exists ai_scan_history_email_check on public.ai_scan_history;
 
 drop function if exists public.handle_new_user();
 drop function if exists public.handle_new_user_signup();
 drop function if exists public.enforce_scan_history_email_match();
 drop function if exists public.cleanup_old_free_scans();
 
-drop policy if exists "profiles_select_own" on public.profiles;
-drop policy if exists "profiles_update_own" on public.profiles;
-drop policy if exists "ai_scan_history_select_own" on public.ai_scan_history;
-drop policy if exists "ai_scan_history_insert_own" on public.ai_scan_history;
-drop policy if exists "ai_scan_history_update_own" on public.ai_scan_history;
-drop policy if exists "ai_scan_history_delete_own" on public.ai_scan_history;
-drop policy if exists "compliance_logs_insert_own" on public.compliance_logs;
+do $$
+begin
+  if exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'profiles' and c.relkind = 'r'
+  ) then
+    execute 'drop trigger if exists profiles_updated_at on public.profiles';
+    drop policy if exists "profiles_select_own" on public.profiles;
+    drop policy if exists "profiles_update_own" on public.profiles;
+  end if;
+
+  if exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'ai_scan_history' and c.relkind = 'r'
+  ) then
+    execute 'drop trigger if exists ai_scan_history_email_check on public.ai_scan_history';
+    drop policy if exists "ai_scan_history_select_own" on public.ai_scan_history;
+    drop policy if exists "ai_scan_history_insert_own" on public.ai_scan_history;
+    drop policy if exists "ai_scan_history_update_own" on public.ai_scan_history;
+    drop policy if exists "ai_scan_history_delete_own" on public.ai_scan_history;
+  end if;
+
+  if exists (
+    select 1
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public' and c.relname = 'compliance_logs' and c.relkind = 'r'
+  ) then
+    drop policy if exists "compliance_logs_insert_own" on public.compliance_logs;
+  end if;
+end $$;
 
 -- Optional: uncomment ONLY on empty dev databases to fully reset app tables
 -- drop table if exists public.ai_scan_history cascade;
@@ -91,12 +117,20 @@ create table if not exists public.ai_scan_history (
 alter table public.ai_scan_history add column if not exists free_summary text;
 alter table public.ai_scan_history add column if not exists overall_score integer;
 
-update public.ai_scan_history
-set overall_score = 0
-where overall_score is null;
-
-alter table public.ai_scan_history
-  alter column overall_score set not null;
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'ai_scan_history'
+      and column_name = 'overall_score'
+      and is_nullable = 'YES'
+  ) then
+    update public.ai_scan_history set overall_score = 0 where overall_score is null;
+    alter table public.ai_scan_history alter column overall_score set not null;
+  end if;
+end $$;
 
 create index if not exists ai_scan_history_created_at_idx
   on public.ai_scan_history (created_at);
