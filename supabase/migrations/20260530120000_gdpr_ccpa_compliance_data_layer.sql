@@ -83,14 +83,14 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null unique,
   full_name text,
-  current_role text,
+  job_role text,
   is_premium boolean not null default false,
   updated_at timestamptz not null default now()
 );
 
 -- Align columns when upgrading from an older profiles definition
 alter table public.profiles add column if not exists full_name text;
-alter table public.profiles add column if not exists current_role text;
+alter table public.profiles add column if not exists job_role text;
 alter table public.profiles add column if not exists is_premium boolean not null default false;
 alter table public.profiles add column if not exists updated_at timestamptz not null default now();
 
