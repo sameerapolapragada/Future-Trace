@@ -1,14 +1,12 @@
 -- Git → Supabase sync test (Web-Dev branch)
 -- Verify after push:
---   select * from public.app_metadata where key = 'web_dev_git_sync_test';
+--   select * from public.web_dev_git_sync_log order by created_at desc limit 5;
 
-insert into public.app_metadata (key, value, updated_at)
-values (
-  'web_dev_git_sync_test',
-  'applied-via-github-web-dev-' || to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
-  now()
-)
-on conflict (key) do update
-  set
-    value = excluded.value,
-    updated_at = excluded.updated_at;
+create table if not exists public.web_dev_git_sync_log (
+  id serial primary key,
+  source text not null,
+  created_at timestamptz not null default now()
+);
+
+insert into public.web_dev_git_sync_log (source)
+values ('github-web-dev-sync-' || to_char(now() at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'));
