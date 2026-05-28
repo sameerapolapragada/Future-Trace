@@ -5,6 +5,8 @@
 - **GitHub check:** `Supabase Preview` → `Remote migration versions not found in local migrations directory.`
 - **Dashboard:** No new migrations / tables from `Web-Dev` pushes.
 
+**Meaning:** The database has at least one row in `supabase_migrations.schema_migrations` with **no matching file** in `supabase/migrations/` on the `Web-Dev` git branch.
+
 ## Cause
 
 Supabase compares **remote** `supabase_migrations.schema_migrations` to **files** in `supabase/migrations/`.  
@@ -44,6 +46,35 @@ Current files in git (full chain):
 - `20260530120000_gdpr_ccpa_compliance_data_layer.sql`
 
 Any **extra** row from the SQL query below must get a matching `YYYYMMDDHHMMSS_*.sql` file.
+
+### Quick repair (run in SQL Editor)
+
+Use **`supabase/docs/repair_schema_migrations.sql`** — STEP 1 lists remote versions; STEP 2 shows orphans.
+
+For each orphan `version` from STEP 2, either:
+
+```bash
+chmod +x supabase/scripts/generate_migration_stub.sh
+./supabase/scripts/generate_migration_stub.sh PASTE_14_DIGIT_VERSION name_here
+git add supabase/migrations && git commit -m "Add migration stub for remote sync" && git push origin Web-Dev
+```
+
+Or ( **dev branch only** ) delete the orphan row:
+
+```sql
+delete from supabase_migrations.schema_migrations where version = 'PASTE_VERSION_HERE';
+```
+
+### Polluted rows (common on branched projects)
+
+Some runs store `version = '20260528120000_initial_schema'` instead of `version = '20260528120000'`.
+Git expects a file named like the `version` column. If STEP 2 shows long `version` strings, add stubs with that **exact** prefix, or delete polluted rows:
+
+```sql
+delete from supabase_migrations.schema_migrations where version ~ '^[0-9]{14}_';
+```
+
+(Only on a **dev/preview** branch, after confirming STEP 1.)
 
 ## Fix B — Fresh branch (empty history)
 
