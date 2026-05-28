@@ -33,15 +33,17 @@ select 1;
 
 4. Commit, push `Web-Dev`, re-check **Supabase Preview**.
 
-Current files in git (baseline):
+Current files in git (full chain):
 
 - `20260528120000_initial_schema.sql`
 - `20260528120100_seed_plans.sql`
 - `20260528130000_add_plans_description.sql`
 - `20260528140000_pipeline_test_marker.sql`
+- `20260529120000_profiles_ai_scan_history.sql` (sync stub if applied from Dev)
+- `20260529130000_ai_scan_history_usage.sql` (sync stub if applied from Dev)
 - `20260530120000_gdpr_ccpa_compliance_data_layer.sql`
 
-Any **extra** row from the query above must get a matching file.
+Any **extra** row from the SQL query below must get a matching `YYYYMMDDHHMMSS_*.sql` file.
 
 ## Fix B — Fresh branch (empty history)
 
