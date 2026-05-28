@@ -36,3 +36,8 @@ That pushes **from your local migration files to Supabase**, not the reverse.
 ## Compliance migration
 
 See `migrations/20260530120000_gdpr_ccpa_compliance_data_layer.sql` and `docs/COMPLIANCE.md`.
+
+## Migrations not showing in Supabase?
+
+If pushes do not apply schema, read **`docs/MIGRATION_SYNC.md`**.  
+Typical error: `Remote migration versions not found in local migrations directory` — run the SQL there to list remote versions and add missing files to git.
