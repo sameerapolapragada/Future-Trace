@@ -1,6 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+function isAuthPath(pathname: string) {
+  return pathname === '/auth' || pathname.startsWith('/auth/')
+}
+
+function isDashboardPath(pathname: string) {
+  return pathname === '/dashboard' || pathname.startsWith('/dashboard/')
+}
+
+function applySessionCookies(source: NextResponse, target: NextResponse) {
+  source.cookies.getAll().forEach((cookie) => {
+    target.cookies.set(cookie.name, cookie.value)
+  })
+}
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -31,12 +45,19 @@ export async function middleware(request: NextRequest) {
     },
   })
 
+  const pathname = request.nextUrl.pathname
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser()
 
-  if (error || !user) {
+  if (user && !error && isAuthPath(pathname)) {
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    applySessionCookies(response, redirectResponse)
+    return redirectResponse
+  }
+
+  if ((error || !user) && isDashboardPath(pathname)) {
     const signInUrl = request.nextUrl.clone()
     signInUrl.pathname = '/auth'
     signInUrl.search = ''
@@ -46,9 +67,7 @@ export async function middleware(request: NextRequest) {
     )
 
     const redirectResponse = NextResponse.redirect(signInUrl)
-    response.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value)
-    })
+    applySessionCookies(response, redirectResponse)
     return redirectResponse
   }
 
@@ -56,6 +75,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // `/dashboard` is not matched by `:path*` alone
-  matcher: ['/dashboard', '/dashboard/:path*'],
+  matcher: ['/dashboard', '/dashboard/:path*', '/auth', '/auth/:path*'],
 }
