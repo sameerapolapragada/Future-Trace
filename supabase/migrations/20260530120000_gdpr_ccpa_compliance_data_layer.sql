@@ -265,12 +265,8 @@ $$;
 revoke all on function public.cleanup_old_free_scans() from public;
 grant execute on function public.cleanup_old_free_scans() to service_role;
 
--- Optional scheduler (Supabase: enable pg_cron extension first):
--- select cron.schedule(
---   'cleanup-old-free-scans',
---   '0 3 * * *',
---   $$select public.cleanup_old_free_scans();$$
--- );
+-- Scheduler: see migration 20260601120000_schedule_data_minimization_cron.sql
+-- (job name data-minimization-cleanup, nightly at 00:00 UTC)
 
 -- -----------------------------------------------------------------------------
 -- Client helper — log user-initiated compliance events (export, deletion request)

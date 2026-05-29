@@ -80,7 +80,7 @@ Ensure the in-app sign-up copy matches this setting (`/auth` success message).
 
 - [ ] Privacy policy published
 - [ ] Terms of service published
-- [ ] (Optional) Schedule `cleanup_old_free_scans()` via pg_cron on production
+- [ ] `data-minimization-cleanup` cron job active (`20260601120000_schedule_data_minimization_cron.sql`; verify `cron.job`)
 
 ---
 

@@ -32,15 +32,36 @@ select public.log_compliance_event('ACCOUNT_DELETION_REQUESTED');
 
 `cleanup_old_free_scans()` deletes `ai_scan_history` rows older than **30 days** for `is_premium = false`.
 
-Schedule daily (after enabling **pg_cron**):
+Scheduled via **pg_cron** (migration `20260601120000_schedule_data_minimization_cron.sql`):
+
+- Job name: `data-minimization-cleanup`
+- Schedule: `0 0 * * *` (midnight **UTC** daily)
+- Manual script: `supabase/scripts/schedule_data_minimization_cron.sql`
+
+Verify in SQL Editor:
 
 ```sql
-select cron.schedule(
-  'cleanup-old-free-scans',
-  '0 3 * * *',
-  $$select public.cleanup_old_free_scans();$$
-);
+select jobid, jobname, schedule, command, active
+from cron.job
+where jobname = 'data-minimization-cleanup';
+
+select d.status, d.start_time, d.end_time, d.return_message
+from cron.job_run_details d
+join cron.job j on j.jobid = d.jobid
+where j.jobname = 'data-minimization-cleanup'
+order by d.start_time desc
+limit 20;
 ```
+
+## Signup trigger verification
+
+Runtime check (service role required in `.env.local`):
+
+```bash
+npm run verify:signup-trigger
+```
+
+Script: `scripts/verify-signup-trigger.ts` — creates a test user, asserts `profiles` + `ACCOUNT_CREATED` log, deletes the user, confirms profile cascade.
 
 ## App signup metadata
 
