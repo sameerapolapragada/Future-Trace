@@ -3,37 +3,43 @@ import type { ReactNode, Metadata } from 'react'
 import PWARegister from '../components/PWARegister'
 
 export const metadata: Metadata = {
-  title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-  description: 'Explore how AI evolved from symbolic systems and machine learning to transformers, generative AI, RAG, AI agents, and multi-agent systems. An educational timeline of AI breakthroughs from 1950s to 2030s.',
-  keywords: 'AI evolution, artificial intelligence, machine learning, deep learning, transformers, generative AI, RAG, AI agents, multi-agent systems',
-  author: 'Future Trace',
+  title: 'AI Career Shield - Disruption Risk & Insulation Tracker',
+  description:
+    'Analyze your job profile vulnerability against the modern AI disruption timeline. Explore AI evolution, industry waves, and protect your career with personalized insulation scoring.',
+  keywords:
+    'AI career shield, job automation risk, AI disruption, career insulation, resume vulnerability score, artificial intelligence timeline',
+  author: 'AI Career Shield',
   viewport: 'width=device-width, initial-scale=1',
   openGraph: {
-    title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-    description: 'Explore how AI evolved from symbolic systems and machine learning to transformers, generative AI, RAG, AI agents, and multi-agent systems.',
+    title: 'AI Career Shield - Disruption Risk & Insulation Tracker',
+    description:
+      'Analyze your job profile vulnerability against the modern AI disruption timeline.',
     type: 'website',
     url: 'https://future-trace.com',
-    siteName: 'Future Trace',
-    locale: 'en_US'
+    siteName: 'AI Career Shield',
+    locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-    description: 'Educational timeline of AI breakthroughs from 1950s to 2030s'
-  }
+    title: 'AI Career Shield - Disruption Risk & Insulation Tracker',
+    description:
+      'Analyze your job profile vulnerability against the modern AI disruption timeline.',
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'EducationalWebpage',
-    name: 'AI Evolution Timeline',
-    description: 'An educational resource explaining the evolution of artificial intelligence from rule-based systems to multi-agent systems.',
+    '@type': 'WebApplication',
+    name: 'AI Career Shield',
+    description:
+      'Disruption risk and insulation tracker — analyze job vulnerability against AI automation and explore the evolution of artificial intelligence.',
     inLanguage: 'en-US',
+    applicationCategory: 'BusinessApplication',
     author: {
       '@type': 'Organization',
-      name: 'Future Trace'
-    }
+      name: 'AI Career Shield',
+    },
   }
 
   return (

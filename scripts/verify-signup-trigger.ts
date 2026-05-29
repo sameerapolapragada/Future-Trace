@@ -1,3 +1,8 @@
+import * as dotenv from 'dotenv'
+import path from 'path'
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+
 /**
  * Runtime verification for handle_new_user_signup() + ACCOUNT_CREATED compliance log.
  *
@@ -7,8 +12,6 @@
  *   npm run verify:signup-trigger
  */
 
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
 import { createAdminClient } from '../utils/supabase/admin'
 
 const MOCK_FULL_NAME = 'Test Case User'
@@ -20,29 +23,23 @@ type StepResult = {
   detail?: string
 }
 
-function loadEnvLocal(): void {
-  const envPath = resolve(process.cwd(), '.env.local')
-  try {
-    const raw = readFileSync(envPath, 'utf8')
-    for (const line of raw.split('\n')) {
-      const trimmed = line.trim()
-      if (!trimmed || trimmed.startsWith('#')) continue
-      const eq = trimmed.indexOf('=')
-      if (eq === -1) continue
-      const key = trimmed.slice(0, eq).trim()
-      let value = trimmed.slice(eq + 1).trim()
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1)
-      }
-      if (process.env[key] === undefined) {
-        process.env[key] = value
-      }
-    }
-  } catch {
-    console.warn('⚠ Could not read .env.local — ensure env vars are exported in your shell.')
+function validateEnv(): void {
+  const missing: string[] = []
+
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()) {
+    missing.push('NEXT_PUBLIC_SUPABASE_URL')
+  }
+
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  }
+
+  if (missing.length > 0) {
+    console.error(
+      '⚠️ Missing keys in .env.local. Make sure you have added SUPABASE_SERVICE_ROLE_KEY to your local env file.'
+    )
+    console.error(`   Missing: ${missing.join(', ')}`)
+    process.exit(1)
   }
 }
 
@@ -68,7 +65,7 @@ function printReport(results: StepResult[]): void {
 }
 
 async function main(): Promise<void> {
-  loadEnvLocal()
+  validateEnv()
 
   const results: StepResult[] = []
   let userId: string | null = null
