@@ -1,8 +1,12 @@
 'use client'
 
 import SignOutButton from '@/components/SignOutButton'
+import CareerRoadmapCard from '@/components/CareerRoadmapCard'
 import DashboardNav from '@/components/DashboardNav'
-import { buildExposureSummary, scoreGaugeColor } from '@/lib/analyzeResume'
+import { buildRoadmapSummary } from '@/lib/analyzeResume'
+import { buildDefaultCareerRoadmap, buildRoadmapShareText, parseCareerRoadmap } from '@/lib/careerRoadmap'
+import { buildStripeCheckoutUrl } from '@/lib/stripeCheckout'
+import type { CareerRoadmap } from '@/types/careerRoadmap'
 import { triggerComplianceLog } from '@/utils/supabase/compliance'
 import { createClient } from '@/utils/supabase/client'
 import {
@@ -41,33 +45,34 @@ type ScanRow = {
   created_at: string
   free_summary?: string | null
   job_title?: string | null
+  career_roadmap?: CareerRoadmap | null
 }
 
 function DashboardSkeleton() {
   return (
-    <div className="animate-pulse flex flex-col gap-6">
+    <div className="flex animate-pulse flex-col gap-6">
       <div className="h-8 w-48 rounded-md bg-sky-950/80" />
       <div className="h-4 w-64 rounded-md bg-sky-950/60" />
       <div className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-6">
-        <div className="mx-auto h-32 w-32 rounded-full bg-sky-950/60" />
-        <div className="mx-auto mt-4 h-4 w-40 rounded bg-sky-950/80" />
-        <div className="mx-auto mt-2 h-3 w-28 rounded bg-sky-950/60" />
-      </div>
-      <div className="space-y-3">
-        <div className="h-12 rounded-lg bg-sky-950/80" />
-        <div className="h-24 rounded-lg bg-sky-950/60" />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="h-20 rounded-xl bg-sky-950/60" />
+          <div className="h-20 rounded-xl bg-sky-950/50" />
+        </div>
+        <div className="mx-auto mt-4 h-8 w-40 rounded-full bg-sky-950/60" />
+        <div className="mt-5 grid gap-3 lg:grid-cols-2">
+          <div className="h-24 rounded-xl bg-sky-950/60" />
+          <div className="h-24 rounded-xl bg-sky-950/50" />
+        </div>
+        <div className="mt-5 h-28 rounded-xl bg-sky-950/40" />
       </div>
     </div>
   )
 }
 
-const STRIPE_CHECKOUT_URL =
-  process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL ?? 'https://buy.stripe.com/test_placeholder'
-
 const LOADING_CAPTIONS = [
-  'Ingesting historical data timeline...',
-  'Evaluating automation task vectors...',
-  'Generating profile insulation report...',
+  'Mapping your current role to destination pathways...',
+  'Estimating transition milestones and timeline...',
+  'Building your personalized career route...',
 ]
 
 const PREMIUM_PLACEHOLDER_LINES = [
@@ -86,87 +91,24 @@ type ShieldTab = 'analysis' | 'history'
 type ShieldPhase = 'form' | 'loading' | 'results'
 
 type ScanResult = {
-  score: number
   jobTitle: string
   summary: string
-}
-
-function scoreTone(score: number) {
-  if (score <= 35) return 'text-emerald-400'
-  if (score <= 70) return 'text-amber-400'
-  return 'text-orange-400'
-}
-
-function exposureBadge(score: number) {
-  if (score <= 35) {
-    return {
-      label: 'Insulated',
-      className: 'border-emerald-500/40 bg-emerald-950/30 text-emerald-400',
-    }
-  }
-  if (score <= 55) {
-    return {
-      label: 'Moderate',
-      className: 'border-amber-500/40 bg-amber-950/30 text-amber-400',
-    }
-  }
-  return {
-    label: 'Vulnerable',
-    className: 'border-orange-500/40 bg-orange-950/30 text-orange-400',
-  }
-}
-
-function CircularScoreRing({ score }: { score: number }) {
-  const radius = 52
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference * (1 - score / 100)
-  const stroke = scoreGaugeColor(score)
-
-  return (
-    <div className="relative mx-auto h-36 w-36 shrink-0">
-      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90" aria-hidden>
-        <circle cx="60" cy="60" r={radius} fill="none" stroke="#1e293b" strokeWidth="9" />
-        <circle
-          cx="60"
-          cy="60"
-          r={radius}
-          fill="none"
-          stroke={stroke}
-          strokeWidth="9"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="transition-[stroke-dashoffset] duration-700 ease-out"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={`text-3xl font-bold tabular-nums ${scoreTone(score)}`}>{score}%</span>
-        <span className="mt-0.5 text-xs font-medium text-slate-400">Score</span>
-      </div>
-    </div>
-  )
+  roadmap: CareerRoadmap
 }
 
 type AnalysisResultCardProps = {
-  score: number
-  jobTitle: string
+  roadmap: CareerRoadmap
   summary: string
-}
-
-function buildAnalysisShareText(score: number, summary: string): string {
-  return `AI Career Analysis Score: ${score}%\n\n${summary}`
 }
 
 function ShareAnalysisMenu({
-  score,
-  summary,
+  roadmap,
   onClose,
 }: {
-  score: number
-  summary: string
+  roadmap: CareerRoadmap
   onClose: () => void
 }) {
-  const shareText = buildAnalysisShareText(score, summary)
+  const shareText = buildRoadmapShareText(roadmap)
 
   const channels = [
     {
@@ -177,7 +119,7 @@ function ShareAnalysisMenu({
     {
       id: 'reddit',
       label: 'Reddit',
-      href: `https://www.reddit.com/submit?title=${encodeURIComponent('AI Career Analysis')}&selftext=true&text=${encodeURIComponent(shareText)}`,
+      href: `https://www.reddit.com/submit?title=${encodeURIComponent('AI Career Transition Pathway')}&selftext=true&text=${encodeURIComponent(shareText)}`,
     },
     {
       id: 'linkedin',
@@ -214,8 +156,7 @@ function ShareAnalysisMenu({
   )
 }
 
-function AnalysisResultCard({ score, jobTitle, summary }: AnalysisResultCardProps) {
-  const badge = exposureBadge(score)
+function AnalysisResultCard({ roadmap, summary }: AnalysisResultCardProps) {
   const [shareOpen, setShareOpen] = useState(false)
   const shareRef = useRef<HTMLDivElement>(null)
 
@@ -242,49 +183,29 @@ function AnalysisResultCard({ score, jobTitle, summary }: AnalysisResultCardProp
     }
   }, [shareOpen])
 
-  return (
-    <article className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-slate-50">AI Career Analysis</h2>
-          <p className="mt-0.5 text-sm text-slate-400">{jobTitle}</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span
-            className={`rounded-full border px-3 py-1 text-xs font-semibold ${badge.className}`}
-          >
-            {badge.label}
-          </span>
-          <div ref={shareRef} className="relative">
-            <button
-              type="button"
-              onClick={() => setShareOpen((open) => !open)}
-              aria-label="Share analysis"
-              aria-expanded={shareOpen}
-              aria-haspopup="menu"
-              className="rounded-lg border border-sky-900/40 p-2 text-slate-400 transition hover:border-sky-800/50 hover:text-slate-200"
-            >
-              <Share2 className="h-4 w-4" aria-hidden />
-            </button>
-            {shareOpen ? (
-              <ShareAnalysisMenu
-                score={score}
-                summary={summary}
-                onClose={() => setShareOpen(false)}
-              />
-            ) : null}
-          </div>
-        </div>
-      </div>
+  const shareButton = (
+    <div ref={shareRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setShareOpen((open) => !open)}
+        aria-label="Share pathway"
+        aria-expanded={shareOpen}
+        aria-haspopup="menu"
+        className="rounded-lg border border-sky-900/40 bg-black/40 p-2 text-slate-400 backdrop-blur transition hover:border-sky-700/50 hover:text-slate-100"
+      >
+        <Share2 className="h-4 w-4" aria-hidden />
+      </button>
+      {shareOpen ? <ShareAnalysisMenu roadmap={roadmap} onClose={() => setShareOpen(false)} /> : null}
+    </div>
+  )
 
-      <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
-        <CircularScoreRing score={score} />
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-slate-100">Analysis Summary</h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-400">{summary}</p>
-        </div>
-      </div>
-    </article>
+  return (
+    <div className="space-y-4">
+      <CareerRoadmapCard roadmap={roadmap} variant="workspace" actions={shareButton} />
+      <p className="rounded-xl border border-sky-900/25 bg-trace-surface/20 px-4 py-3 text-sm leading-relaxed text-slate-400">
+        {summary}
+      </p>
+    </div>
   )
 }
 
@@ -298,28 +219,27 @@ function MethodologyDataTransparencyCard() {
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" aria-hidden />
         <div className="min-w-0">
           <h4 id="methodology-heading" className="text-xs font-semibold leading-snug text-slate-100">
-            How Your Score and Insulation Milestones Are Calculated
+            How Your Transition Pathway Is Built
           </h4>
           <p className="mt-2 leading-relaxed">
-            Your Future Trace index is a composite vector score derived from role-specific task
-            exposure, industry momentum, and generative automation overlap — not a single-model
-            guess.
+            Your roadmap maps current role signals, destination requirements, and skill gaps into a
+            sequenced transition route — not a single replacement percentage.
           </p>
           <ul className="mt-3 list-none space-y-2.5 leading-relaxed">
             <li>
-              <span className="font-semibold text-slate-200">O*NET Database (v29.x)</span>
+              <span className="font-semibold text-slate-200">O*NET occupational tasks</span>
               {' — '}
-              task automation vulnerability arrays mapped to your target role.
+              role capability requirements for each stage of your recommended route.
             </li>
             <li>
-              <span className="font-semibold text-slate-200">U.S. Bureau of Labor Statistics (BLS)</span>
+              <span className="font-semibold text-slate-200">Labor market trend signals</span>
               {' — '}
-              industry growth and displacement trend signals.
+              industry momentum shaping realistic journey timelines.
             </li>
             <li>
-              <span className="font-semibold text-slate-200">Task-level capability matrices</span>
+              <span className="font-semibold text-slate-200">Resume skill extraction</span>
               {' — '}
-              tracking generative automation overlap across your stated skills.
+              milestone and obstacle callouts derived from your stated experience.
             </li>
           </ul>
           <Link
@@ -336,20 +256,28 @@ function MethodologyDataTransparencyCard() {
 }
 
 const PREMIUM_FEATURES = [
-  'Detailed vulnerability mapping',
+  'Saved pathway history and progress tracking',
   'Personalized skill development plan',
-  'Weekly progress tracking',
-  'Career positioning strategies',
+  'Weekly milestone check-ins',
+  'Full recommended route breakdown',
 ] as const
 
-function PremiumUpsellCard({ onRunAnotherScan }: { onRunAnotherScan: () => void }) {
+function PremiumUpsellCard({
+  userId,
+  onRunAnotherScan,
+}: {
+  userId: string | null
+  onRunAnotherScan: () => void
+}) {
+  const checkoutUrl = buildStripeCheckoutUrl(userId)
+
   return (
     <aside className="rounded-2xl border border-sky-800/40 bg-gradient-to-br from-sky-950/80 via-trace-surface/90 to-blue-950/70 p-5">
       <div className="flex items-center gap-2">
         <Lock className="h-4 w-4 text-sky-400" aria-hidden />
         <Crown className="h-4 w-4 text-sky-300" aria-hidden />
       </div>
-      <h3 className="mt-3 text-base font-semibold text-slate-50">Get Detailed Vulnerability Analysis</h3>
+      <h3 className="mt-3 text-base font-semibold text-slate-50">Unlock Your Full Transition Plan</h3>
       <ul className="mt-4 space-y-2.5">
         {PREMIUM_FEATURES.map((feature) => (
           <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-300">
@@ -359,8 +287,11 @@ function PremiumUpsellCard({ onRunAnotherScan }: { onRunAnotherScan: () => void 
         ))}
       </ul>
       <a
-        href={STRIPE_CHECKOUT_URL}
-        className="mt-5 flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500"
+        href={checkoutUrl ?? '#'}
+        aria-disabled={!checkoutUrl}
+        className={`mt-5 flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 ${
+          checkoutUrl ? '' : 'pointer-events-none opacity-60'
+        }`}
       >
         Upgrade to Premium
         <ChevronRight className="h-4 w-4" aria-hidden />
@@ -381,45 +312,47 @@ function PremiumUpsellCard({ onRunAnotherScan }: { onRunAnotherScan: () => void 
 function TemporaryScanNotice() {
   return (
     <p className="rounded-xl border border-sky-900/30 bg-trace-surface/30 px-4 py-3 text-xs leading-relaxed text-slate-500">
-      This scan is temporary. Upgrade to premium to save your resume, unlock historical tracking,
-      and get your 30-day action plan.
+      This roadmap preview is temporary. Upgrade to premium to save your resume, unlock historical
+      tracking, and get your full 30-day action plan.
     </p>
   )
 }
 
 function scanRowToResult(scan: ScanRow, fallbackJobRole: string): ScanResult {
   const jobTitle = scan.job_title?.trim() || fallbackJobRole.trim() || 'Your role'
+  const storedRoadmap = parseCareerRoadmap(scan.career_roadmap)
+  const roadmap =
+    storedRoadmap ??
+    buildDefaultCareerRoadmap(fallbackJobRole || jobTitle, jobTitle)
+
   return {
-    score: scan.overall_score,
     jobTitle,
-    summary:
-      scan.free_summary?.trim() || buildExposureSummary(scan.overall_score, jobTitle),
+    summary: scan.free_summary?.trim() || buildRoadmapSummary(roadmap),
+    roadmap,
   }
 }
 
 function AnalysisResultsLayout({
   result,
   isPremium,
+  userId,
   onRunAnotherScan,
 }: {
   result: ScanResult
   isPremium: boolean
+  userId: string | null
   onRunAnotherScan: () => void
 }) {
   return (
     <section className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-6">
       <div className="flex flex-col gap-4 lg:col-span-2">
-        <AnalysisResultCard
-          score={result.score}
-          jobTitle={result.jobTitle}
-          summary={result.summary}
-        />
+        <AnalysisResultCard roadmap={result.roadmap} summary={result.summary} />
         <MethodologyDataTransparencyCard />
         {isPremium ? (
           <div className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-5">
-            <h3 className="text-sm font-semibold text-slate-100">Your 30-day action plan</h3>
+            <h3 className="text-sm font-semibold text-slate-100">Your 30-day pathway actions</h3>
             <div className="mt-4">
-              <InsulationTaskChecklist isPremium={isPremium} />
+              <PathwayActionChecklist isPremium={isPremium} />
             </div>
           </div>
         ) : null}
@@ -437,17 +370,13 @@ function AnalysisResultsLayout({
           </button>
         ) : (
           <>
-            <PremiumUpsellCard onRunAnotherScan={onRunAnotherScan} />
+            <PremiumUpsellCard userId={userId} onRunAnotherScan={onRunAnotherScan} />
             <TemporaryScanNotice />
           </>
         )}
       </div>
     </section>
   )
-}
-
-function insulationScore(vulnerabilityScore: number): number {
-  return Math.max(0, Math.min(100, 100 - vulnerabilityScore))
 }
 
 const FIELD_INPUT_CLASS =
@@ -462,8 +391,8 @@ const FIELD_TEXTAREA_CLASS =
 function HowItWorksCard() {
   const steps = [
     'Upload your resume or paste your skills',
-    'Enter your target job title',
-    'Get your AI insulation score and personalized insights',
+    'Enter your target destination role',
+    'Get your AI Career Transition Roadmap with milestones and route',
   ]
 
   return (
@@ -483,7 +412,7 @@ function HowItWorksCard() {
   )
 }
 
-function InsulationTaskChecklist({ isPremium }: { isPremium: boolean }) {
+function PathwayActionChecklist({ isPremium }: { isPremium: boolean }) {
   return (
     <ul className="space-y-3">
       {PREMIUM_PLACEHOLDER_LINES.map((line, index) => {
@@ -515,6 +444,7 @@ function InsulationTaskChecklist({ isPremium }: { isPremium: boolean }) {
 }
 
 type ShieldViewProps = {
+  userId: string | null
   fullName: string
   jobRole: string
   isPremium: boolean
@@ -523,6 +453,7 @@ type ShieldViewProps = {
 }
 
 function ShieldView({
+  userId,
   fullName,
   jobRole,
   isPremium,
@@ -541,6 +472,7 @@ function ShieldView({
   const [shieldTab, setShieldTab] = useState<ShieldTab>('analysis')
   const [lastScanDate, setLastScanDate] = useState<string | null>(null)
   const [selectedHistoryScan, setSelectedHistoryScan] = useState<ScanResult | null>(null)
+  const [defaultRoadmap, setDefaultRoadmap] = useState<CareerRoadmap | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   function startNewAnalysis() {
@@ -552,6 +484,17 @@ function ShieldView({
   useEffect(() => {
     setTargetJobTitle((prev) => (prev.trim() ? prev : jobRole))
   }, [jobRole])
+
+  useEffect(() => {
+    if (isPremium) {
+      setDefaultRoadmap(null)
+      return
+    }
+
+    const current = jobRole.trim() || 'Your current role'
+    const destination = targetJobTitle.trim() || undefined
+    setDefaultRoadmap(buildDefaultCareerRoadmap(current, destination))
+  }, [isPremium, jobRole, targetJobTitle])
 
   useEffect(() => {
     if (phase !== 'loading') return
@@ -606,6 +549,7 @@ function ShieldView({
         jobTitle?: string
         summary?: string
         fullSummary?: string
+        roadmap?: CareerRoadmap
         isPremium?: boolean
       }
 
@@ -615,10 +559,14 @@ function ShieldView({
         return
       }
 
+      const roadmap =
+        payload.roadmap ??
+        buildDefaultCareerRoadmap(jobRole.trim() || trimmedTitle, payload.jobTitle ?? trimmedTitle)
+
       setResult({
-        score: payload.score ?? 0,
         jobTitle: payload.jobTitle ?? trimmedTitle,
-        summary: payload.summary ?? '',
+        summary: payload.summary ?? buildRoadmapSummary(roadmap),
+        roadmap,
       })
       setLastScanDate(new Date().toISOString())
       setSelectedHistoryScan(null)
@@ -677,7 +625,7 @@ function ShieldView({
           <h1 className="text-xl font-bold text-slate-50 md:text-2xl">AI Career Shield</h1>
         </div>
         <p className="mt-1.5 text-sm text-slate-400">
-          Analyze your AI exposure risk and career resilience.
+          Build your AI Career Transition Roadmap from resume to destination role.
         </p>
         {isPremium ? (
           <span className="mt-2 inline-block rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
@@ -732,6 +680,7 @@ function ShieldView({
             <AnalysisResultsLayout
               result={selectedHistoryScan}
               isPremium={isPremium}
+              userId={userId}
               onRunAnotherScan={startNewAnalysis}
             />
           </div>
@@ -770,10 +719,8 @@ function ShieldView({
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`text-sm font-semibold tabular-nums ${scoreTone(result.score)}`}
-                        >
-                          {result.score}%
+                        <span className="text-sm font-semibold tabular-nums text-sky-300">
+                          ~{result.roadmap.estimatedJourneyMonths} mo
                         </span>
                         <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:text-sky-400" />
                       </div>
@@ -802,10 +749,8 @@ function ShieldView({
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`text-sm font-semibold tabular-nums ${scoreTone(scan.overall_score)}`}
-                          >
-                            {scan.overall_score}%
+                          <span className="text-sm font-semibold tabular-nums text-sky-300">
+                            ~{scanResult.roadmap.estimatedJourneyMonths} mo
                           </span>
                           <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:text-sky-400" />
                         </div>
@@ -821,6 +766,9 @@ function ShieldView({
 
       {shieldTab === 'analysis' && phase === 'form' ? (
         <div className="space-y-4">
+          {!isPremium && defaultRoadmap ? (
+            <CareerRoadmapCard roadmap={defaultRoadmap} variant="preview" />
+          ) : null}
           <HowItWorksCard />
           <form onSubmit={handleAnalyze} className="space-y-4">
             <div className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-4">
@@ -938,7 +886,7 @@ function ShieldView({
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-950/40 transition hover:bg-sky-500"
               >
                 <Zap className="h-4 w-4" aria-hidden />
-                Calculate My AI Insulation Index
+                Generate My Career Roadmap
               </button>
             </div>
           </form>
@@ -969,6 +917,7 @@ function ShieldView({
         <AnalysisResultsLayout
           result={result}
           isPremium={isPremium}
+          userId={userId}
           onRunAnotherScan={startNewAnalysis}
         />
       ) : null}
@@ -1078,6 +1027,7 @@ function ProfileView({
   const [weeklyReports, setWeeklyReports] = useState(false)
 
   const displayName = fullName.trim() || email.split('@')[0] || 'Member'
+  const checkoutUrl = buildStripeCheckoutUrl(userId)
 
   async function handleExportPii() {
     if (!userId) return
@@ -1104,7 +1054,7 @@ function ProfileView({
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase
           .from('ai_scan_history')
-          .select('id, overall_score, free_summary, created_at')
+          .select('id, overall_score, free_summary, created_at, career_roadmap')
           .eq('profile_id', userId)
           .order('created_at', { ascending: false }),
       ])
@@ -1236,8 +1186,11 @@ function ProfileView({
 
         {!isPremium ? (
           <a
-            href={STRIPE_CHECKOUT_URL}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500"
+            href={checkoutUrl ?? '#'}
+            aria-disabled={!checkoutUrl}
+            className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 ${
+              checkoutUrl ? '' : 'pointer-events-none opacity-60'
+            }`}
           >
             <Crown className="h-4 w-4" aria-hidden />
             Upgrade to Premium
@@ -1450,7 +1403,7 @@ export default function DashboardPage() {
     const [{ data: scans }, { count }, { data: latestScan }] = await Promise.all([
       supabase
         .from('ai_scan_history')
-        .select('id, overall_score, created_at, free_summary, job_title')
+        .select('id, overall_score, created_at, free_summary, job_title, career_roadmap')
         .eq('profile_id', userId)
         .order('created_at', { ascending: false })
         .limit(25),
@@ -1530,7 +1483,7 @@ export default function DashboardPage() {
         await Promise.all([
           supabase
             .from('ai_scan_history')
-            .select('id, overall_score, created_at, free_summary, job_title')
+            .select('id, overall_score, created_at, free_summary, job_title, career_roadmap')
             .eq('profile_id', user.id)
             .order('created_at', { ascending: false })
             .limit(25),
@@ -1614,6 +1567,7 @@ export default function DashboardPage() {
             <DashboardSkeleton />
           ) : view === 'shield' ? (
             <ShieldView
+              userId={userId}
               fullName={fullName}
               jobRole={currentRole}
               isPremium={isPremium}

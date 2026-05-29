@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "verify:signup-trigger": "tsx scripts/verify-signup-trigger.ts"
+    "verify:signup-trigger": "tsx scripts/verify-signup-trigger.ts",
+    "verify:stripe-env": "tsx scripts/verify-stripe-env.ts",
+    "register:stripe-webhook": "tsx scripts/register-stripe-webhook.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

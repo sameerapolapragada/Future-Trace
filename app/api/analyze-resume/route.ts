@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, email, is_premium')
+    .select('id, email, job_role, is_premium')
     .eq('id', user.id)
     .single()
 
@@ -80,13 +80,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  const analysis = analyzeResumeLocally(resumeText, jobTitle)
+  const currentPosition = profile.job_role?.trim() || jobTitle
+  const analysis = analyzeResumeLocally(resumeText, currentPosition, jobTitle)
 
   if (!profile.is_premium) {
     return NextResponse.json({
-      score: analysis.score,
       jobTitle,
       summary: analysis.freeSummary,
+      roadmap: analysis.roadmap,
       isPremium: false,
     })
   }
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
     overall_score: analysis.score,
     free_summary: analysis.freeSummary,
     job_title: jobTitle,
+    career_roadmap: analysis.roadmap,
   })
 
   if (insertError) {
@@ -109,6 +111,7 @@ export async function POST(request: Request) {
     jobTitle,
     summary: analysis.freeSummary,
     fullSummary: analysis.fullSummary,
+    roadmap: analysis.roadmap,
     isPremium: true,
   })
 }

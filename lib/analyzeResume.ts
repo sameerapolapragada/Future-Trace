@@ -1,7 +1,11 @@
+import { buildCareerRoadmap } from '@/lib/careerRoadmap'
+import type { CareerRoadmap } from '@/types/careerRoadmap'
+
 export type AnalyzeResumeResult = {
   score: number
   freeSummary: string
   fullSummary: string
+  roadmap: CareerRoadmap
 }
 
 const AUTOMATION_SIGNALS = [
@@ -33,7 +37,8 @@ const RESILIENCE_SIGNALS = [
 
 export function analyzeResumeLocally(
   resumeText: string,
-  jobTitle: string
+  currentPosition: string,
+  destinationPosition: string
 ): AnalyzeResumeResult {
   const lower = resumeText.toLowerCase()
   let score = 52
@@ -51,12 +56,18 @@ export function analyzeResumeLocally(
 
   score = Math.min(100, Math.max(8, Math.round(score)))
 
-  const freeSummary = buildExposureSummary(score, jobTitle)
-  const fullSummary = `${freeSummary} Premium analysis maps each resume bullet to automation timelines, flags three priority skill gaps, and generates a daily micro-learning sequence aimed at reducing your vulnerability score below 15% within 30 days.`
+  const roadmap = buildCareerRoadmap(resumeText, currentPosition, destinationPosition)
+  const freeSummary = buildRoadmapSummary(roadmap)
+  const fullSummary = `${freeSummary} Premium unlocks step-by-step weekly actions, skill-gap drills, and progress tracking across every stage of your route.`
 
-  return { score, freeSummary, fullSummary }
+  return { score, freeSummary, fullSummary, roadmap }
 }
 
+export function buildRoadmapSummary(roadmap: CareerRoadmap): string {
+  return `Your transition from ${roadmap.currentPosition} to ${roadmap.destinationPosition} is estimated at ${roadmap.estimatedJourneyMonths} months. Focus next on ${roadmap.nextMilestone.toLowerCase()} while navigating ${roadmap.biggestObstacle.toLowerCase()}.`
+}
+
+/** @deprecated Use roadmap journey months in new UI; kept for legacy history rows. */
 export function buildExposureSummary(score: number, jobTitle: string): string {
   const exposureBand =
     score >= 71

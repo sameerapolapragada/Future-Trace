@@ -47,6 +47,7 @@ Current files in git (full chain):
 - `20260531120000_web_dev_git_supabase_sync_test.sql` (if present on branch)
 - `20260601120000_schedule_data_minimization_cron.sql`
 - `20260601120100_ai_scan_history_job_title.sql`
+- `20260601120200_ai_scan_history_career_roadmap.sql`
 
 Any **extra** row from the SQL query below must get a matching `YYYYMMDDHHMMSS_*.sql` file.
 
