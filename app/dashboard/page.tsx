@@ -3,37 +3,34 @@
 import SignOutButton from '@/components/SignOutButton'
 import CareerRoadmapCard from '@/components/CareerRoadmapCard'
 import DashboardNav from '@/components/DashboardNav'
-import { buildRoadmapSummary } from '@/lib/analyzeResume'
+import NewAnalysisInputView from '@/components/NewAnalysisInputView'
+import PremiumUpgradeButton from '@/components/PremiumUpgradeButton'
+import { buildRoadmapSummary, scoreExposureLabel, scoreGaugeColor } from '@/lib/analyzeResume'
 import { buildDefaultCareerRoadmap, buildRoadmapShareText, parseCareerRoadmap } from '@/lib/careerRoadmap'
-import { buildStripeCheckoutUrl } from '@/lib/stripeCheckout'
 import type { CareerRoadmap } from '@/types/careerRoadmap'
 import { triggerComplianceLog } from '@/utils/supabase/compliance'
 import { createClient } from '@/utils/supabase/client'
 import {
   Bell,
   Check,
-  ChevronLeft,
   ChevronRight,
-  Crown,
   Download,
-  FileText,
+  History,
   Info,
   Linkedin,
   Loader2,
   Lock,
   Mail,
+  PersonStanding,
   RefreshCw,
   Settings,
   Share2,
   Shield,
   Trash2,
-  TrendingUp,
-  Upload,
   User,
   X,
-  Zap,
 } from 'lucide-react'
-import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -84,8 +81,6 @@ const PREMIUM_PLACEHOLDER_LINES = [
   'Day 14 · AI-resistant portfolio artifact workshop',
 ]
 
-const RESUME_CHAR_LIMIT = 5000
-
 type ShieldTab = 'analysis' | 'history'
 
 type ShieldPhase = 'form' | 'loading' | 'results'
@@ -94,11 +89,13 @@ type ScanResult = {
   jobTitle: string
   summary: string
   roadmap: CareerRoadmap
+  score: number
 }
 
 type AnalysisResultCardProps = {
   roadmap: CareerRoadmap
-  summary: string
+  isPremium: boolean
+  userId: string | null
 }
 
 function ShareAnalysisMenu({
@@ -156,7 +153,11 @@ function ShareAnalysisMenu({
   )
 }
 
-function AnalysisResultCard({ roadmap, summary }: AnalysisResultCardProps) {
+function AnalysisResultCard({
+  roadmap,
+  isPremium,
+  userId,
+}: AnalysisResultCardProps) {
   const [shareOpen, setShareOpen] = useState(false)
   const shareRef = useRef<HTMLDivElement>(null)
 
@@ -200,12 +201,13 @@ function AnalysisResultCard({ roadmap, summary }: AnalysisResultCardProps) {
   )
 
   return (
-    <div className="space-y-4">
-      <CareerRoadmapCard roadmap={roadmap} variant="workspace" actions={shareButton} />
-      <p className="rounded-xl border border-sky-900/25 bg-trace-surface/20 px-4 py-3 text-sm leading-relaxed text-slate-400">
-        {summary}
-      </p>
-    </div>
+    <CareerRoadmapCard
+      roadmap={roadmap}
+      variant="workspace"
+      actions={shareButton}
+      isPremium={isPremium}
+      userId={userId}
+    />
   )
 }
 
@@ -239,7 +241,7 @@ function MethodologyDataTransparencyCard() {
             <li>
               <span className="font-semibold text-slate-200">Resume skill extraction</span>
               {' — '}
-              milestone and obstacle callouts derived from your stated experience.
+              milestone and leverage-point callouts derived from your stated experience.
             </li>
           </ul>
           <Link
@@ -251,60 +253,6 @@ function MethodologyDataTransparencyCard() {
           </Link>
         </div>
       </div>
-    </aside>
-  )
-}
-
-const PREMIUM_FEATURES = [
-  'Saved pathway history and progress tracking',
-  'Personalized skill development plan',
-  'Weekly milestone check-ins',
-  'Full recommended route breakdown',
-] as const
-
-function PremiumUpsellCard({
-  userId,
-  onRunAnotherScan,
-}: {
-  userId: string | null
-  onRunAnotherScan: () => void
-}) {
-  const checkoutUrl = buildStripeCheckoutUrl(userId)
-
-  return (
-    <aside className="rounded-2xl border border-sky-800/40 bg-gradient-to-br from-sky-950/80 via-trace-surface/90 to-blue-950/70 p-5">
-      <div className="flex items-center gap-2">
-        <Lock className="h-4 w-4 text-sky-400" aria-hidden />
-        <Crown className="h-4 w-4 text-sky-300" aria-hidden />
-      </div>
-      <h3 className="mt-3 text-base font-semibold text-slate-50">Unlock Your Full Transition Plan</h3>
-      <ul className="mt-4 space-y-2.5">
-        {PREMIUM_FEATURES.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5 text-sm text-slate-300">
-            <Check className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" aria-hidden />
-            {feature}
-          </li>
-        ))}
-      </ul>
-      <a
-        href={checkoutUrl ?? '#'}
-        aria-disabled={!checkoutUrl}
-        className={`mt-5 flex w-full items-center justify-center gap-1 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 ${
-          checkoutUrl ? '' : 'pointer-events-none opacity-60'
-        }`}
-      >
-        Upgrade to Premium
-        <ChevronRight className="h-4 w-4" aria-hidden />
-      </a>
-      <p className="mt-2 text-center text-[11px] text-slate-500">$29/month · Cancel anytime</p>
-      <button
-        type="button"
-        onClick={onRunAnotherScan}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sky-800/50 bg-transparent py-3 text-sm font-medium text-slate-300 transition hover:border-sky-700/60 hover:bg-sky-950/30"
-      >
-        <RefreshCw className="h-4 w-4" aria-hidden />
-        Run Another Scan
-      </button>
     </aside>
   )
 }
@@ -329,7 +277,249 @@ function scanRowToResult(scan: ScanRow, fallbackJobRole: string): ScanResult {
     jobTitle,
     summary: scan.free_summary?.trim() || buildRoadmapSummary(roadmap),
     roadmap,
+    score: scan.overall_score,
   }
+}
+
+type HistoryEntry = {
+  id: string
+  result: ScanResult
+  createdAt: string
+}
+
+function formatHistoryTimestamp(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function HistoryEmptyState({ onStartAnalysis }: { onStartAnalysis: () => void }) {
+  return (
+    <section
+      aria-labelledby="history-empty-heading"
+      className="flex flex-col items-center rounded-2xl border border-dashed border-sky-900/35 bg-trace-surface/25 px-6 py-16 text-center"
+    >
+      <History className="h-9 w-9 text-slate-600" aria-hidden />
+      <h2 id="history-empty-heading" className="sr-only">
+        No career roadmaps yet
+      </h2>
+      <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-400">
+        No career roadmaps generated yet. Go to New Analysis to build your first AI transition path.
+      </p>
+      <button
+        type="button"
+        onClick={onStartAnalysis}
+        className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:from-sky-500 hover:to-cyan-500"
+      >
+        Go to New Analysis
+      </button>
+    </section>
+  )
+}
+
+function PastAnalysisSelector({
+  entries,
+  selectedEntryId,
+  onSelectEntry,
+}: {
+  entries: HistoryEntry[]
+  selectedEntryId: string | null
+  onSelectEntry: (entryId: string) => void
+}) {
+  const activeEntryId = selectedEntryId ?? entries[0]?.id ?? ''
+
+  return (
+    <div className="w-full sm:ml-auto sm:w-auto sm:min-w-[220px] sm:max-w-xs">
+      <label
+        htmlFor="past-analysis-role"
+        className="mb-1.5 block text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-right"
+      >
+        Past analysis
+      </label>
+      <select
+        id="past-analysis-role"
+        value={activeEntryId}
+        onChange={(event) => onSelectEntry(event.target.value)}
+        className="w-full rounded-xl border border-sky-900/40 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25"
+      >
+        {entries.map((entry) => (
+          <option key={entry.id} value={entry.id}>
+            {entry.result.jobTitle} · {formatHistoryTimestamp(entry.createdAt)}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function TargetRoleSummaryBar({ result }: { result: ScanResult }) {
+  const score = result.score
+  const riskLabel = scoreExposureLabel(score)
+  const scoreColor = scoreGaugeColor(score)
+  const riskBadgeClass =
+    riskLabel === 'Vulnerable'
+      ? 'border-red-500/40 bg-red-950/30 text-red-300'
+      : riskLabel === 'At Risk'
+        ? 'border-amber-500/40 bg-amber-950/30 text-amber-300'
+        : 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300'
+
+  return (
+    <aside className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-4">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400/80">
+        Target role summary
+      </p>
+      <p className="mt-1 text-sm font-semibold leading-snug text-slate-50">
+        {result.roadmap.destinationPosition}
+      </p>
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-sky-900/30 pt-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Exposure score
+          </p>
+          <p className="mt-0.5 text-xl font-bold tabular-nums" style={{ color: scoreColor }}>
+            {score}
+          </p>
+        </div>
+        <span
+          className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${riskBadgeClass}`}
+        >
+          {riskLabel}
+        </span>
+      </div>
+      <p className="mt-4 text-xs leading-relaxed text-slate-400">{result.summary}</p>
+    </aside>
+  )
+}
+
+function HistoryTabPanel({
+  entries,
+  selectedEntryId,
+  onStartAnalysis,
+  isPremium,
+  userId,
+  onRunAnotherScan,
+}: {
+  entries: HistoryEntry[]
+  selectedEntryId: string | null
+  onStartAnalysis: () => void
+  isPremium: boolean
+  userId: string | null
+  onRunAnotherScan: () => void
+}) {
+  if (entries.length === 0) {
+    return <HistoryEmptyState onStartAnalysis={onStartAnalysis} />
+  }
+
+  const selectedEntry =
+    entries.find((entry) => entry.id === selectedEntryId) ?? entries[0] ?? null
+
+  return (
+    <section aria-labelledby="scan-history-heading" className="flex flex-col gap-6">
+      <h2 id="scan-history-heading" className="sr-only">
+        Scan history
+      </h2>
+
+      {selectedEntry ? (
+        <AnalysisResultsLayout
+          result={selectedEntry.result}
+          isPremium={isPremium}
+          userId={userId}
+          onRunAnotherScan={onRunAnotherScan}
+        />
+      ) : null}
+    </section>
+  )
+}
+
+function RoleTransitionStatusBar({ roadmap }: { roadmap: CareerRoadmap }) {
+  return (
+    <div
+      role="group"
+      aria-label={`Career transition from ${roadmap.currentPosition} to ${roadmap.destinationPosition}`}
+      className="relative overflow-hidden rounded-xl border border-sky-500/25 bg-gradient-to-r from-sky-950/35 via-slate-950/90 to-sky-950/35 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(56,189,248,0.08)]"
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/40 to-transparent"
+        aria-hidden
+      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
+        <p className="min-w-0 truncate text-sm font-semibold text-slate-100 sm:flex-1 sm:text-right">
+          {roadmap.currentPosition}
+        </p>
+
+        <div className="flex shrink-0 items-center justify-center gap-1" aria-hidden>
+          <div className="hidden h-px w-5 bg-gradient-to-r from-slate-600 to-sky-500 sm:block" />
+          <ChevronRight className="h-4 w-4 text-sky-400" strokeWidth={2.5} />
+          <div className="hidden h-px w-5 bg-gradient-to-r from-sky-500 to-sky-400 sm:block" />
+        </div>
+
+        <p className="min-w-0 truncate text-sm font-semibold text-sky-100 sm:flex-1">
+          {roadmap.destinationPosition}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function NextUpStatusBar({ roadmap }: { roadmap: CareerRoadmap }) {
+  const skillSprint = roadmap.immediate30DayTarget ?? '1-Month Skill Sprint'
+  const runwayMonths = roadmap.estimatedJourneyMonths
+  const activeMonth = 1
+  const runwayProgress = Math.min(100, Math.round((activeMonth / runwayMonths) * 100))
+
+  return (
+    <div
+      role="status"
+      aria-label={`Next up: ${skillSprint}. Career runway: ${runwayMonths} months.`}
+      className="relative overflow-hidden rounded-xl border border-cyan-500/25 bg-gradient-to-r from-cyan-950/35 via-slate-950/90 to-sky-950/35 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(34,211,238,0.08)]"
+    >
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"
+        aria-hidden
+      />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <span className="shrink-0 rounded-md border border-cyan-500/30 bg-cyan-950/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
+            Next up
+          </span>
+          <PersonStanding className="h-4 w-4 shrink-0 text-cyan-300" aria-hidden />
+          <p className="truncate text-sm font-semibold text-slate-100">{skillSprint}</p>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-3 sm:w-[min(100%,16rem)] sm:shrink-0">
+          <div
+            className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800/90"
+            role="progressbar"
+            aria-valuenow={runwayProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Career runway progress: month ${activeMonth} of ${runwayMonths}`}
+          >
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-sky-400 transition-all duration-500"
+              style={{ width: `${runwayProgress}%` }}
+            />
+          </div>
+          <p className="shrink-0 text-[11px] tabular-nums text-slate-400">
+            <span className="font-semibold text-slate-200">{runwayMonths}</span> mo runway
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SidebarPremiumUpgrade() {
+  return (
+    <div>
+      <PremiumUpgradeButton />
+      <p className="mt-2 text-center text-[11px] text-slate-500">$29/month · Cancel anytime</p>
+    </div>
+  )
 }
 
 function AnalysisResultsLayout({
@@ -344,10 +534,15 @@ function AnalysisResultsLayout({
   onRunAnotherScan: () => void
 }) {
   return (
-    <section className="flex flex-col gap-6 lg:grid lg:grid-cols-3 lg:gap-6">
-      <div className="flex flex-col gap-4 lg:col-span-2">
-        <AnalysisResultCard roadmap={result.roadmap} summary={result.summary} />
-        <MethodologyDataTransparencyCard />
+    <section className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
+      <div className="flex min-w-0 flex-col gap-3">
+        <RoleTransitionStatusBar roadmap={result.roadmap} />
+        <NextUpStatusBar roadmap={result.roadmap} />
+        <AnalysisResultCard
+          roadmap={result.roadmap}
+          isPremium={isPremium}
+          userId={userId}
+        />
         {isPremium ? (
           <div className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-5">
             <h3 className="text-sm font-semibold text-slate-100">Your 30-day pathway actions</h3>
@@ -358,22 +553,19 @@ function AnalysisResultsLayout({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-4 lg:col-span-1">
-        {isPremium ? (
-          <button
-            type="button"
-            onClick={onRunAnotherScan}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-800/50 bg-trace-surface/40 py-3 text-sm font-medium text-slate-300 transition hover:bg-trace-raised"
-          >
-            <RefreshCw className="h-4 w-4" aria-hidden />
-            Run Another Scan
-          </button>
-        ) : (
-          <>
-            <PremiumUpsellCard userId={userId} onRunAnotherScan={onRunAnotherScan} />
-            <TemporaryScanNotice />
-          </>
-        )}
+      <div className="flex flex-col gap-4">
+        <TargetRoleSummaryBar result={result} />
+        <button
+          type="button"
+          onClick={onRunAnotherScan}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-800/50 bg-trace-surface/40 py-3 text-sm font-medium text-slate-300 transition hover:bg-trace-raised"
+        >
+          <RefreshCw className="h-4 w-4" aria-hidden />
+          Run Another Scan
+        </button>
+        {!isPremium ? <SidebarPremiumUpgrade /> : null}
+        {!isPremium ? <TemporaryScanNotice /> : null}
+        <MethodologyDataTransparencyCard />
       </div>
     </section>
   )
@@ -384,33 +576,6 @@ const FIELD_INPUT_CLASS =
 
 const FIELD_INPUT_READONLY_CLASS =
   'w-full rounded-lg border border-sky-900/40 bg-slate-950 p-3 pr-10 text-sm text-slate-400 outline-none disabled:cursor-not-allowed'
-
-const FIELD_TEXTAREA_CLASS =
-  'w-full resize-none rounded-xl bg-slate-900 p-3 text-sm leading-relaxed text-slate-100 caret-sky-400 placeholder:text-slate-500 outline-none disabled:cursor-not-allowed disabled:opacity-60'
-
-function HowItWorksCard() {
-  const steps = [
-    'Upload your resume or paste your skills',
-    'Enter your target destination role',
-    'Get your AI Career Transition Roadmap with milestones and route',
-  ]
-
-  return (
-    <div className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-4">
-      <h3 className="text-sm font-semibold text-slate-100">How It Works</h3>
-      <ol className="mt-3 space-y-2">
-        {steps.map((step, index) => (
-          <li key={step} className="flex gap-2.5 text-xs leading-relaxed text-slate-400">
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/20 text-[11px] font-semibold text-sky-300">
-              {index + 1}
-            </span>
-            {step}
-          </li>
-        ))}
-      </ol>
-    </div>
-  )
-}
 
 function PathwayActionChecklist({ isPremium }: { isPremium: boolean }) {
   return (
@@ -462,39 +627,81 @@ function ShieldView({
 }: ShieldViewProps) {
   const [phase, setPhase] = useState<ShieldPhase>('form')
   const [resumeText, setResumeText] = useState('')
-  const [targetJobTitle, setTargetJobTitle] = useState(jobRole)
+  const [currentJobTitle, setCurrentJobTitle] = useState(jobRole)
+  const [targetJobTitle, setTargetJobTitle] = useState('')
   const [loadingCaptionIndex, setLoadingCaptionIndex] = useState(0)
-  const [result, setResult] = useState<ScanResult | null>(null)
+  const [roadmapData, setRoadmapData] = useState<CareerRoadmap | null>(null)
+  const [roadmapSummary, setRoadmapSummary] = useState('')
+  const [analyzedJobTitle, setAnalyzedJobTitle] = useState('')
+  const [analyzedScore, setAnalyzedScore] = useState<number | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isDraggingFile, setIsDraggingFile] = useState(false)
   const [shieldTab, setShieldTab] = useState<ShieldTab>('analysis')
   const [lastScanDate, setLastScanDate] = useState<string | null>(null)
-  const [selectedHistoryScan, setSelectedHistoryScan] = useState<ScanResult | null>(null)
-  const [defaultRoadmap, setDefaultRoadmap] = useState<CareerRoadmap | null>(null)
+  const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const currentSessionResult: ScanResult | null = roadmapData
+    ? {
+        jobTitle: analyzedJobTitle,
+        summary: roadmapSummary,
+        roadmap: roadmapData,
+        score: analyzedScore ?? 0,
+      }
+    : null
+
+  const historyEntries = useMemo(() => {
+    const entries: HistoryEntry[] = []
+
+    if (currentSessionResult) {
+      entries.push({
+        id: '__session__',
+        result: currentSessionResult,
+        createdAt: lastScanDate ?? new Date().toISOString(),
+      })
+    }
+
+    for (const scan of recentScans) {
+      entries.push({
+        id: scan.id,
+        result: scanRowToResult(scan, jobRole),
+        createdAt: scan.created_at,
+      })
+    }
+
+    return entries.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
+  }, [currentSessionResult, lastScanDate, recentScans, jobRole])
+
+  function goToNewAnalysis() {
+    setShieldTab('analysis')
+    setSelectedHistoryEntryId(null)
+  }
 
   function startNewAnalysis() {
     resetToForm()
-    setSelectedHistoryScan(null)
+    setSelectedHistoryEntryId(null)
     setShieldTab('analysis')
   }
 
   useEffect(() => {
-    setTargetJobTitle((prev) => (prev.trim() ? prev : jobRole))
-  }, [jobRole])
+    if (shieldTab !== 'history' || historyEntries.length === 0) return
+
+    const hasValidSelection =
+      selectedHistoryEntryId !== null &&
+      historyEntries.some((entry) => entry.id === selectedHistoryEntryId)
+
+    if (!hasValidSelection) {
+      setSelectedHistoryEntryId(historyEntries[0].id)
+    }
+  }, [shieldTab, historyEntries, selectedHistoryEntryId])
 
   useEffect(() => {
-    if (isPremium) {
-      setDefaultRoadmap(null)
-      return
-    }
-
-    const current = jobRole.trim() || 'Your current role'
-    const destination = targetJobTitle.trim() || undefined
-    setDefaultRoadmap(buildDefaultCareerRoadmap(current, destination))
-  }, [isPremium, jobRole, targetJobTitle])
+    setCurrentJobTitle((prev) => (prev.trim() ? prev : jobRole))
+  }, [jobRole])
 
   useEffect(() => {
     if (phase !== 'loading') return
@@ -511,12 +718,18 @@ function ShieldView({
     setFormError(null)
 
     const trimmedResume = resumeText.trim()
+    const trimmedCurrent = currentJobTitle.trim()
     const trimmedTitle = targetJobTitle.trim()
     const hasFile = uploadedFile !== null
     const hasText = trimmedResume.length >= 40
 
     if (!hasFile && !hasText) {
       setFormError('Upload your resume or paste at least 40 characters of text.')
+      return
+    }
+
+    if (!trimmedCurrent) {
+      setFormError('Enter your current job title.')
       return
     }
 
@@ -532,6 +745,7 @@ function ShieldView({
       // In-memory only — file bytes go straight to the API; no Supabase Storage upload.
       const formData = new FormData()
       formData.append('jobTitle', trimmedTitle)
+      formData.append('currentJobTitle', trimmedCurrent)
       if (hasFile) {
         formData.append('file', uploadedFile)
       } else {
@@ -561,15 +775,17 @@ function ShieldView({
 
       const roadmap =
         payload.roadmap ??
-        buildDefaultCareerRoadmap(jobRole.trim() || trimmedTitle, payload.jobTitle ?? trimmedTitle)
+        buildDefaultCareerRoadmap(trimmedCurrent, payload.jobTitle ?? trimmedTitle)
 
-      setResult({
-        jobTitle: payload.jobTitle ?? trimmedTitle,
-        summary: payload.summary ?? buildRoadmapSummary(roadmap),
-        roadmap,
-      })
+      const summary = payload.summary ?? buildRoadmapSummary(roadmap)
+      const jobTitle = payload.jobTitle ?? trimmedTitle
+
+      setRoadmapData(roadmap)
+      setRoadmapSummary(summary)
+      setAnalyzedJobTitle(jobTitle)
+      setAnalyzedScore(typeof payload.score === 'number' ? payload.score : 0)
       setLastScanDate(new Date().toISOString())
-      setSelectedHistoryScan(null)
+      setSelectedHistoryEntryId(null)
       setPhase('results')
       if (payload.isPremium) {
         onScanComplete()
@@ -583,6 +799,10 @@ function ShieldView({
   function resetToForm() {
     setPhase('form')
     setFormError(null)
+    setRoadmapData(null)
+    setRoadmapSummary('')
+    setAnalyzedJobTitle('')
+    setAnalyzedScore(null)
   }
 
   function selectResumeFile(file: File) {
@@ -625,7 +845,7 @@ function ShieldView({
           <h1 className="text-xl font-bold text-slate-50 md:text-2xl">AI Career Shield</h1>
         </div>
         <p className="mt-1.5 text-sm text-slate-400">
-          Build your AI Career Transition Roadmap from resume to destination role.
+          Analyze your AI exposure risk and career resilience.
         </p>
         {isPremium ? (
           <span className="mt-2 inline-block rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
@@ -634,12 +854,13 @@ function ShieldView({
         ) : null}
       </header>
 
-      <div className="flex gap-6 border-b border-sky-900/40">
+      <div className="flex flex-col gap-3 border-b border-sky-900/40 pb-0 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex gap-6">
         <button
           type="button"
           onClick={() => {
             setShieldTab('analysis')
-            setSelectedHistoryScan(null)
+            setSelectedHistoryEntryId(null)
           }}
           className={`border-b-2 pb-2.5 text-sm font-medium transition ${
             shieldTab === 'analysis'
@@ -651,10 +872,7 @@ function ShieldView({
         </button>
         <button
           type="button"
-          onClick={() => {
-            setShieldTab('history')
-            setSelectedHistoryScan(null)
-          }}
+          onClick={() => setShieldTab('history')}
           className={`border-b-2 pb-2.5 text-sm font-medium transition ${
             shieldTab === 'history'
               ? 'border-sky-600 text-sky-300'
@@ -663,234 +881,62 @@ function ShieldView({
         >
           History
         </button>
+        </div>
+
+        {shieldTab === 'history' && historyEntries.length > 0 ? (
+          <PastAnalysisSelector
+            entries={historyEntries}
+            selectedEntryId={selectedHistoryEntryId}
+            onSelectEntry={setSelectedHistoryEntryId}
+          />
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-6">
       {shieldTab === 'history' ? (
-        selectedHistoryScan ? (
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => setSelectedHistoryScan(null)}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-400 transition hover:text-sky-300"
-            >
-              <ChevronLeft className="h-4 w-4" aria-hidden />
-              Back to History
-            </button>
-            <AnalysisResultsLayout
-              result={selectedHistoryScan}
-              isPremium={isPremium}
-              userId={userId}
-              onRunAnotherScan={startNewAnalysis}
-            />
-          </div>
-        ) : (
-          <section aria-labelledby="scan-history-heading" className="space-y-3">
-            <h2 id="scan-history-heading" className="sr-only">
-              Scan history
-            </h2>
-            {recentScans.length === 0 && !result ? (
-              <div className="rounded-xl border border-dashed border-sky-900/40 bg-trace-surface/40 px-4 py-10 text-center">
-                <TrendingUp className="mx-auto h-8 w-8 text-slate-600" aria-hidden />
-                <p className="mt-2 text-sm text-slate-400">No scan history yet</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  Premium scans are saved here. Free scans are processed in memory only.
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-2">
-                {result ? (
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedHistoryScan(result)}
-                      className="group flex w-full items-center justify-between rounded-lg border border-sky-900/40 bg-trace-surface/60 px-4 py-3 text-left transition hover:border-sky-800/50 hover:bg-trace-surface/80"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">
-                          {result.jobTitle}
-                        </p>
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {new Date(lastScanDate ?? Date.now()).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold tabular-nums text-sky-300">
-                          ~{result.roadmap.estimatedJourneyMonths} mo
-                        </span>
-                        <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:text-sky-400" />
-                      </div>
-                    </button>
-                  </li>
-                ) : null}
-                {recentScans.map((scan) => {
-                  const scanResult = scanRowToResult(scan, jobRole)
-                  return (
-                    <li key={scan.id}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedHistoryScan(scanResult)}
-                        className="group flex w-full items-center justify-between rounded-lg border border-sky-900/40 bg-trace-surface/60 px-4 py-3 text-left transition hover:border-sky-800/50 hover:bg-trace-surface/80"
-                      >
-                        <div>
-                          <p className="text-sm font-medium text-slate-200 group-hover:text-slate-100">
-                            {scanResult.jobTitle}
-                          </p>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            {new Date(scan.created_at).toLocaleDateString(undefined, {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric',
-                            })}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold tabular-nums text-sky-300">
-                            ~{scanResult.roadmap.estimatedJourneyMonths} mo
-                          </span>
-                          <ChevronRight className="h-4 w-4 text-slate-600 transition group-hover:text-sky-400" />
-                        </div>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-          </section>
-        )
+        <HistoryTabPanel
+          entries={historyEntries}
+          selectedEntryId={selectedHistoryEntryId}
+          onStartAnalysis={goToNewAnalysis}
+          isPremium={isPremium}
+          userId={userId}
+          onRunAnotherScan={startNewAnalysis}
+        />
       ) : null}
 
-      {shieldTab === 'analysis' && phase === 'form' ? (
-        <div className="space-y-4">
-          {!isPremium && defaultRoadmap ? (
-            <CareerRoadmapCard roadmap={defaultRoadmap} variant="preview" />
-          ) : null}
-          <HowItWorksCard />
-          <form onSubmit={handleAnalyze} className="space-y-4">
-            <div className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-sky-400" aria-hidden />
-                <h2 className="text-sm font-semibold text-slate-100">Resume or Skills Summary</h2>
-              </div>
-
-              <input
-                ref={fileInputRef}
-                id="resumeUpload"
-                type="file"
-                accept=".txt,.pdf,.docx,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                onChange={onFileInputChange}
-                className="sr-only"
-              />
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(event) => {
-                  event.preventDefault()
-                  setIsDraggingFile(true)
-                }}
-                onDragLeave={() => setIsDraggingFile(false)}
-                onDrop={onDropResumeFile}
-                className={`flex w-full flex-col items-center rounded-xl border-2 border-dashed px-4 py-8 transition ${
-                  isDraggingFile
-                    ? 'border-sky-400/60 bg-sky-950/30'
-                    : 'border-sky-800/50 bg-trace-surface/30 hover:border-sky-700/60'
-                }`}
-              >
-                <Upload className="h-8 w-8 text-sky-400/80" aria-hidden />
-                {uploadedFileName ? (
-                  <>
-                    <p className="mt-3 text-sm font-medium text-slate-200">{uploadedFileName}</p>
-                    <p className="mt-1 text-xs text-slate-500">Click to replace or drag a new file</p>
-                  </>
-                ) : (
-                  <>
-                    <p className="mt-3 text-sm text-slate-300">
-                      <span className="font-medium text-sky-300">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500">PDF, TXT, or DOCX (up to 5 MB)</p>
-                  </>
-                )}
-              </button>
-
-              {uploadedFileName ? (
-                <button
-                  type="button"
-                  onClick={clearUploadedFile}
-                  className="mt-2 text-xs font-medium text-slate-400 transition hover:text-slate-200"
-                >
-                  Remove file
-                </button>
-              ) : null}
-
-              <p className="mt-4 text-xs text-slate-500">Or paste your resume / LinkedIn summary</p>
-              <div className="mt-2 rounded-xl border border-sky-900/40 bg-slate-900">
-                <textarea
-                  id="resumeText"
-                  name="resumeText"
-                  rows={6}
-                  maxLength={RESUME_CHAR_LIMIT}
-                  value={resumeText}
-                  onChange={(e) => {
-                    setResumeText(e.target.value)
-                    if (uploadedFileName) {
-                      setUploadedFileName(null)
-                      setUploadedFile(null)
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = ''
-                      }
-                    }
-                  }}
-                  placeholder="Paste your resume or skills summary here..."
-                  disabled={uploadedFile !== null}
-                  className={FIELD_TEXTAREA_CLASS}
-                />
-                <p className="border-t border-sky-900/30 px-3 py-1.5 text-right text-[11px] text-slate-500">
-                  {resumeText.length} / {RESUME_CHAR_LIMIT} characters
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="mb-3 flex items-center justify-center gap-2">
-                <TrendingUp className="h-4 w-4 text-sky-400" aria-hidden />
-                <label htmlFor="targetJobTitle" className="text-sm font-semibold text-slate-100">
-                  Target Job Title
-                </label>
-              </div>
-              <input
-                id="targetJobTitle"
-                name="targetJobTitle"
-                type="text"
-                autoComplete="organization-title"
-                value={targetJobTitle}
-                onChange={(e) => setTargetJobTitle(e.target.value)}
-                placeholder="e.g. Senior Product Manager"
-                className="w-full max-w-md rounded-xl border border-sky-900/40 bg-slate-900 px-5 py-3 text-center text-sm font-semibold text-slate-100 caret-sky-400 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30"
-              />
-            </div>
-
-            {formError ? (
-              <p role="alert" className="text-sm text-red-400">
-                {formError}
-              </p>
-            ) : null}
-
-            <div className="flex justify-center">
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-sky-950/40 transition hover:bg-sky-500"
-              >
-                <Zap className="h-4 w-4" aria-hidden />
-                Generate My Career Roadmap
-              </button>
-            </div>
-          </form>
-        </div>
+      {shieldTab === 'analysis' && roadmapData === null && phase === 'form' ? (
+        <NewAnalysisInputView
+          resumeText={resumeText}
+          currentJobTitle={currentJobTitle}
+          targetJobTitle={targetJobTitle}
+          uploadedFileName={uploadedFileName}
+          isDraggingFile={isDraggingFile}
+          formError={formError}
+          fileInputRef={fileInputRef}
+          hasUploadedFile={uploadedFile !== null}
+          onResumeTextChange={(value) => {
+            setResumeText(value)
+            if (uploadedFileName) {
+              setUploadedFileName(null)
+              setUploadedFile(null)
+              if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+              }
+            }
+          }}
+          onCurrentJobTitleChange={setCurrentJobTitle}
+          onTargetJobTitleChange={setTargetJobTitle}
+          onFileInputChange={onFileInputChange}
+          onDragOver={(event) => {
+            event.preventDefault()
+            setIsDraggingFile(true)
+          }}
+          onDragLeave={() => setIsDraggingFile(false)}
+          onDrop={onDropResumeFile}
+          onOpenFilePicker={() => fileInputRef.current?.click()}
+          onClearFile={clearUploadedFile}
+          onSubmit={handleAnalyze}
+        />
       ) : null}
 
       {shieldTab === 'analysis' && phase === 'loading' ? (
@@ -913,9 +959,9 @@ function ShieldView({
         </section>
       ) : null}
 
-      {shieldTab === 'analysis' && phase === 'results' && result ? (
+      {shieldTab === 'analysis' && roadmapData !== null && phase === 'results' && currentSessionResult ? (
         <AnalysisResultsLayout
-          result={result}
+          result={currentSessionResult}
           isPremium={isPremium}
           userId={userId}
           onRunAnotherScan={startNewAnalysis}
@@ -1027,7 +1073,6 @@ function ProfileView({
   const [weeklyReports, setWeeklyReports] = useState(false)
 
   const displayName = fullName.trim() || email.split('@')[0] || 'Member'
-  const checkoutUrl = buildStripeCheckoutUrl(userId)
 
   async function handleExportPii() {
     if (!userId) return
@@ -1185,16 +1230,7 @@ function ProfileView({
         </dl>
 
         {!isPremium ? (
-          <a
-            href={checkoutUrl ?? '#'}
-            aria-disabled={!checkoutUrl}
-            className={`mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 ${
-              checkoutUrl ? '' : 'pointer-events-none opacity-60'
-            }`}
-          >
-            <Crown className="h-4 w-4" aria-hidden />
-            Upgrade to Premium
-          </a>
+          <PremiumUpgradeButton className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-70" />
         ) : null}
       </aside>
 
@@ -1421,9 +1457,7 @@ export default function DashboardPage() {
         .maybeSingle(),
     ])
 
-    if (scans?.length) {
-      setRecentScans(scans)
-    }
+    setRecentScans(scans ?? [])
 
     setScansThisMonth(count ?? 0)
     setLastScanAt(latestScan?.created_at ?? null)
@@ -1503,8 +1537,8 @@ export default function DashboardPage() {
 
       if (cancelled) return
 
-      if (!scansError && scans?.length) {
-        setRecentScans(scans)
+      if (!scansError) {
+        setRecentScans(scans ?? [])
       }
 
       setScansThisMonth(count ?? 0)

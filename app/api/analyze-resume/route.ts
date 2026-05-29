@@ -51,6 +51,7 @@ export async function POST(request: Request) {
   }
 
   const jobTitle = String(formData.get('jobTitle') ?? '').trim()
+  const currentJobTitle = String(formData.get('currentJobTitle') ?? '').trim()
   if (!jobTitle) {
     return NextResponse.json({ error: 'Target job title is required.' }, { status: 400 })
   }
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  const currentPosition = profile.job_role?.trim() || jobTitle
+  const currentPosition = currentJobTitle || profile.job_role?.trim() || jobTitle
   const analysis = analyzeResumeLocally(resumeText, currentPosition, jobTitle)
 
   if (!profile.is_premium) {
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
       jobTitle,
       summary: analysis.freeSummary,
       roadmap: analysis.roadmap,
+      score: analysis.score,
       isPremium: false,
     })
   }

@@ -64,7 +64,9 @@ export function analyzeResumeLocally(
 }
 
 export function buildRoadmapSummary(roadmap: CareerRoadmap): string {
-  return `Your transition from ${roadmap.currentPosition} to ${roadmap.destinationPosition} is estimated at ${roadmap.estimatedJourneyMonths} months. Focus next on ${roadmap.nextMilestone.toLowerCase()} while navigating ${roadmap.biggestObstacle.toLowerCase()}.`
+  const skillSprint = roadmap.immediate30DayTarget ?? '1-Month Skill Sprint'
+
+  return `Your phased route from ${roadmap.currentPosition} to ${roadmap.destinationPosition} spans ${roadmap.estimatedJourneyMonths} months. Next up: ${skillSprint}. First sprint: ${roadmap.nextMilestone}`
 }
 
 /** @deprecated Use roadmap journey months in new UI; kept for legacy history rows. */
@@ -83,4 +85,12 @@ export function scoreGaugeColor(score: number): string {
   if (score <= 35) return '#34d399'
   if (score <= 70) return '#fbbf24'
   return '#f87171'
+}
+
+export type ExposureRiskLabel = 'Safe' | 'At Risk' | 'Vulnerable'
+
+export function scoreExposureLabel(score: number): ExposureRiskLabel {
+  if (score >= 71) return 'Vulnerable'
+  if (score >= 36) return 'At Risk'
+  return 'Safe'
 }
