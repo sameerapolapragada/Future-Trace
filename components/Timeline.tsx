@@ -15,15 +15,15 @@ import {
 
 function categoryIcon(category: string) {
   const c = category.toLowerCase()
-  if (c.includes('rule')) return <Cpu className="h-5 w-5 text-indigo-400" />
-  if (c.includes('stat') || c.includes('ml')) return <Zap className="h-5 w-5 text-indigo-400" />
-  if (c.includes('deep')) return <Brain className="h-5 w-5 text-indigo-400" />
-  if (c.includes('transform')) return <Layers className="h-5 w-5 text-indigo-400" />
-  if (c.includes('generat') || c.includes('llm')) return <FileText className="h-5 w-5 text-indigo-400" />
-  if (c.includes('retriev') || c.includes('rag')) return <Database className="h-5 w-5 text-indigo-400" />
-  if (c.includes('agentic') || c.includes('agent')) return <Brain className="h-5 w-5 text-indigo-400" />
-  if (c.includes('multi')) return <Users className="h-5 w-5 text-indigo-400" />
-  return <Cpu className="h-5 w-5 text-indigo-400" />
+  if (c.includes('rule')) return <Cpu className="h-5 w-5 text-sky-300" />
+  if (c.includes('stat') || c.includes('ml')) return <Zap className="h-5 w-5 text-sky-300" />
+  if (c.includes('deep')) return <Brain className="h-5 w-5 text-sky-300" />
+  if (c.includes('transform')) return <Layers className="h-5 w-5 text-sky-300" />
+  if (c.includes('generat') || c.includes('llm')) return <FileText className="h-5 w-5 text-sky-300" />
+  if (c.includes('retriev') || c.includes('rag')) return <Database className="h-5 w-5 text-sky-300" />
+  if (c.includes('agentic') || c.includes('agent')) return <Brain className="h-5 w-5 text-sky-300" />
+  if (c.includes('multi')) return <Users className="h-5 w-5 text-sky-300" />
+  return <Cpu className="h-5 w-5 text-sky-300" />
 }
 
 export default function Timeline({ entries = milestones }: { entries?: Milestone[] }) {
@@ -73,7 +73,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
 
   return (
     <section id="timeline">
-      <div className="mb-6 rounded-lg border border-slate-800 bg-slate-900/50 p-4 backdrop-blur-sm">
+      <div className="mb-6 rounded-lg border border-sky-900/40 bg-trace-surface/50 p-4 backdrop-blur-sm">
         <div className="mb-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
             Filter by technology
@@ -85,8 +85,8 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
                 onClick={() => setFilter(f)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   filter === f
-                    ? 'border border-indigo-500 bg-indigo-600 text-white'
-                    : 'border border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-700'
+                    ? 'border border-sky-400 bg-sky-500 text-white'
+                    : 'border border-sky-900/40 bg-black/60 text-slate-300 hover:border-sky-800/50'
                 }`}
               >
                 {f}
@@ -107,7 +107,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search year, title, industry, job role, technology..."
-            className="mt-2 w-full rounded-md border border-slate-800 bg-slate-950/80 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 backdrop-blur-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="mt-2 w-full rounded-md border border-sky-900/40 bg-black/80 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 backdrop-blur-sm focus:border-transparent focus:outline-none focus:ring-2 focus:ring-sky-400"
           />
         </div>
       </div>
@@ -118,15 +118,15 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
           return (
             <article
               key={m.id}
-              className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 backdrop-blur-sm transition-all hover:border-slate-700 sm:p-5"
+              className="rounded-lg border border-sky-900/40 bg-trace-surface/50 p-4 backdrop-blur-sm transition-all hover:border-sky-800/50 sm:p-5"
             >
               <button
                 onClick={() => setOpenId(isOpen ? null : m.id)}
                 aria-expanded={isOpen}
-                className="flex w-full flex-col gap-3 rounded px-1 py-0.5 text-left focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-950 sm:flex-row sm:items-start"
+                className="flex w-full flex-col gap-3 rounded px-1 py-0.5 text-left focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-black sm:flex-row sm:items-start"
               >
                 <div className="flex flex-1 items-start gap-3 sm:gap-4">
-                  <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-slate-800 bg-slate-950/80">
+                  <div className="mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-sky-900/40 bg-black/80">
                     {categoryIcon(m.technologyCategory)}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -139,7 +139,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
                 </div>
 
                 <div className="ml-auto flex items-center gap-2 sm:ml-6">
-                  <span className="hidden items-center gap-2 rounded-full border border-slate-800 bg-slate-950/60 px-3 py-1 text-sm text-slate-300 sm:inline-flex">
+                  <span className="hidden items-center gap-2 rounded-full border border-sky-900/40 bg-black/60 px-3 py-1 text-sm text-slate-300 sm:inline-flex">
                     {categoryIcon(m.technologyCategory)}
                     <span>{m.technologyCategory}</span>
                   </span>
@@ -155,7 +155,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
               </button>
 
               {isOpen && (
-                <div className="mt-4 grid gap-4 border-t border-slate-800 pt-4 text-sm sm:grid-cols-2">
+                <div className="mt-4 grid gap-4 border-t border-sky-900/40 pt-4 text-sm sm:grid-cols-2">
                   <div>
                     <h4 className="font-semibold text-slate-100">Why it mattered</h4>
                     <p className="mt-2 leading-relaxed text-slate-300">{m.whyItMattered}</p>
@@ -171,7 +171,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
                     <ul className="mt-2 space-y-1 text-slate-300">
                       {m.industriesImpacted.map((i) => (
                         <li key={i} className="flex items-start gap-2">
-                          <span className="mt-1.5 text-indigo-400">•</span>
+                          <span className="mt-1.5 text-sky-300">•</span>
                           <span>{i}</span>
                         </li>
                       ))}
@@ -196,7 +196,7 @@ export default function Timeline({ entries = milestones }: { entries?: Milestone
         })}
 
         {visible.length === 0 && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-8 text-center backdrop-blur-sm">
+          <div className="rounded-lg border border-sky-900/40 bg-trace-surface/50 p-8 text-center backdrop-blur-sm">
             <p className="font-medium text-slate-100">No results found</p>
             <p className="mt-1 text-sm text-slate-400">Try adjusting your filters or search query.</p>
           </div>

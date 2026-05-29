@@ -2,15 +2,14 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'AI Career Shield',
-    short_name: 'AIShield',
-    description:
-      'Analyze your job profile vulnerability against the modern AI disruption timeline',
+    name: 'Future Trace',
+    short_name: 'FutureTrace',
+    description: 'Career Intelligence for the AI Age',
     start_url: '/dashboard',
     display: 'standalone',
     orientation: 'portrait',
-    background_color: '#020617',
-    theme_color: '#0f172a',
+    background_color: '#000000',
+    theme_color: '#0ea5e9',
     icons: [
       {
         src: '/icon-192x192.png',

@@ -91,14 +91,14 @@ function AuthPageContent() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex rounded-xl bg-slate-900/80 p-1 ring-1 ring-slate-800">
+      <div className="mb-6 flex rounded-xl bg-trace-surface/80 p-1 ring-1 ring-sky-900/40">
         <button
           type="button"
           onClick={() => switchMode('signin')}
           disabled={loading}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
             !isSignUp
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-sky-500 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -110,7 +110,7 @@ function AuthPageContent() {
           disabled={loading}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
             isSignUp
-              ? 'bg-indigo-600 text-white shadow-sm'
+              ? 'bg-sky-500 text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -123,7 +123,7 @@ function AuthPageContent() {
       </h2>
       <p className="mt-1 text-sm text-slate-400">
         {isSignUp
-          ? 'Protect your career path with AI Career Shield.'
+          ? 'Career Intelligence for the AI Age — create your Future Trace account.'
           : 'Sign in to continue to your dashboard.'}
       </p>
 
@@ -160,7 +160,7 @@ function AuthPageContent() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={loading}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none ring-indigo-500/0 transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60"
+              className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none ring-sky-400/0 transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
               placeholder="Jane Doe"
             />
           </div>
@@ -179,7 +179,7 @@ function AuthPageContent() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60"
+            className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
             placeholder="you@example.com"
           />
         </div>
@@ -198,7 +198,7 @@ function AuthPageContent() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
-            className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60"
+            className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
             placeholder="••••••••"
           />
         </div>
@@ -206,7 +206,7 @@ function AuthPageContent() {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -234,7 +234,7 @@ function AuthPageContent() {
 function AuthPageFallback() {
   return (
     <div className="flex w-full items-center justify-center py-16">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-400" aria-label="Loading" />
+      <Loader2 className="h-8 w-8 animate-spin text-sky-300" aria-label="Loading" />
     </div>
   )
 }

@@ -109,7 +109,7 @@ function ResetPasswordContent() {
   if (checkingSession) {
     return (
       <div className="flex w-full items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-indigo-400" aria-label="Loading" />
+        <Loader2 className="h-8 w-8 animate-spin text-sky-300" aria-label="Loading" />
       </div>
     )
   }
@@ -118,7 +118,7 @@ function ResetPasswordContent() {
     <div className="w-full">
       <h2 className="text-lg font-semibold text-slate-50">Set a new password</h2>
       <p className="mt-2 text-sm text-slate-400">
-        Choose a strong password for your AI Career Shield account.
+        Choose a strong password for your Future Trace account.
       </p>
 
       {error ? (
@@ -156,7 +156,7 @@ function ResetPasswordContent() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               disabled={loading}
-              className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-60"
+              className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
               placeholder="••••••••"
             />
           </div>
@@ -164,7 +164,7 @@ function ResetPasswordContent() {
           <button
             type="submit"
             disabled={loading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
               <>
@@ -201,7 +201,7 @@ function ResetPasswordContent() {
 function ResetPasswordFallback() {
   return (
     <div className="flex w-full items-center justify-center py-16">
-      <Loader2 className="h-8 w-8 animate-spin text-indigo-400" aria-label="Loading" />
+      <Loader2 className="h-8 w-8 animate-spin text-sky-300" aria-label="Loading" />
     </div>
   )
 }

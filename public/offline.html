@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title>Offline — Future Trace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        background-color: #000000;
+        color: #f0f9ff;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        letter-spacing: -0.011em;
+      }
+
+      main {
+        max-width: 22rem;
+        width: 100%;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        line-height: 1.55;
+        color: #f0f9ff;
+      }
+
+      button {
+        margin-top: 1.75rem;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 0.5rem;
+        background-color: #0ea5e9;
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+      }
+
+      button:hover {
+        background-color: #38bdf8;
+      }
+
+      button:active {
+        background-color: #0284c7;
+      }
+    </style>
+  </head>
+  <body class="bg-black text-slate-100">
+    <main>
+      <h1>
+        📴 You are currently offline. Check your network connection to re-calculate your Future
+        Trace career metrics.
+      </h1>
+      <button type="button" onclick="window.location.reload()">Retry Connection</button>
+    </main>
+  </body>
+</html>

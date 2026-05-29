@@ -1,15 +1,13 @@
 import type { Metadata } from 'next'
-import Hero from '../components/Hero'
-import Header from '../components/Header'
-import Timeline from '../components/Timeline'
-import IndustryWaves from '../components/IndustryWaves'
-import JobsAffected from '../components/JobsAffected'
+import Image from 'next/image'
+import HomeTimelineSection from '../components/HomeTimelineSection'
+import IndustryWavesPreview from '../components/IndustryWavesPreview'
+import JobsAffectedPreview from '../components/JobsAffectedPreview'
 import WhatComesNext from '../components/WhatComesNext'
 
 export const metadata: Metadata = {
-  title: 'AI Career Shield - Disruption Risk & Insulation Tracker',
-  description:
-    'Analyze your job profile vulnerability against the modern AI disruption timeline.',
+  title: 'Future Trace - Career Intelligence for the AI Age',
+  description: 'Career Intelligence for the AI Age — analyze, adapt, and protect your professional path.',
   alternates: {
     canonical: 'https://future-trace.com',
   },
@@ -17,44 +15,40 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="bg-slate-950 text-slate-300">
-      <Hero />
+    <div className="mx-auto w-full max-w-7xl bg-black text-slate-300">
+      <header className="mb-8 flex items-center gap-4 sm:gap-5">
+        <div className="flex h-16 w-16 shrink-0 animate-home-logo-enter items-center justify-center sm:h-20 sm:w-20">
+          <Image
+            src="/icon-192x192.png"
+            alt=""
+            width={80}
+            height={80}
+            className="h-full w-full object-contain"
+            priority
+          />
+        </div>
+        <div className="animate-home-title-enter [animation-delay:140ms]">
+          <p className="text-2xl font-bold tracking-tight text-slate-100 sm:text-3xl">Future Trace</p>
+          <p className="mt-0.5 text-base text-slate-400 sm:text-lg">
+            Career Intelligence for the AI Age
+          </p>
+        </div>
+      </header>
 
-      <Header />
+      <HomeTimelineSection />
 
-      <section aria-labelledby="intro-section" className="mb-12">
-        <h2 id="intro-section" className="text-2xl sm:text-3xl font-bold text-slate-100">
-          From Rules to Autonomous Systems
-        </h2>
-        <p className="mt-3 max-w-2xl leading-relaxed text-slate-300">
-          This timeline explains the evolution of artificial intelligence in approachable terms.
-          Starting with handcrafted rule-based systems, we move through probabilistic learning,
-          deep neural networks, transformer-based models, retrieval-augmented generation (RAG),
-          and the rise of AI agents and multi-agent systems.
-        </p>
-      </section>
+      <IndustryWavesPreview />
 
-      <section aria-labelledby="timeline-section" className="mb-12">
-        <h2 id="timeline-section" className="mb-6 text-2xl sm:text-3xl font-bold text-slate-100">
-          Timeline
-        </h2>
-        <Timeline />
-      </section>
-
-      <IndustryWaves />
-
-      <JobsAffected />
+      <JobsAffectedPreview />
 
       <WhatComesNext />
 
       <footer
-        className="mt-16 border-t border-slate-800 pt-8 text-sm text-slate-400"
+        className="mt-16 border-t border-sky-900/40 pt-8 text-sm text-slate-400"
         role="contentinfo"
       >
-        <p className="mb-2 text-slate-300">
-          AI Career Shield — educational timeline and career insulation intelligence.
-        </p>
-        <p className="text-xs">© 2026 AI Career Shield. All rights reserved.</p>
+        <p className="mb-2 text-slate-300">Future Trace — Career Intelligence for the AI Age.</p>
+        <p className="text-xs">© 2026 Future Trace. All rights reserved.</p>
       </footer>
     </div>
   )

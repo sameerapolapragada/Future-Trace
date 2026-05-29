@@ -51,14 +51,21 @@ export function analyzeResumeLocally(
 
   score = Math.min(100, Math.max(8, Math.round(score)))
 
-  const exposureBand =
-    score >= 71 ? 'immediate automation pressure' : score >= 36 ? 'moderate task exposure' : 'lower near-term disruption risk'
-
-  const freeSummary = `Your ${jobTitle} profile shows ${exposureBand} based on recurring task patterns, tooling references, and skill signals detected in your resume. Focus on strengthening judgment-heavy and cross-functional capabilities to improve long-term insulation.`
-
+  const freeSummary = buildExposureSummary(score, jobTitle)
   const fullSummary = `${freeSummary} Premium analysis maps each resume bullet to automation timelines, flags three priority skill gaps, and generates a daily micro-learning sequence aimed at reducing your vulnerability score below 15% within 30 days.`
 
   return { score, freeSummary, fullSummary }
+}
+
+export function buildExposureSummary(score: number, jobTitle: string): string {
+  const exposureBand =
+    score >= 71
+      ? 'immediate automation pressure'
+      : score >= 36
+        ? 'moderate task exposure'
+        : 'lower near-term disruption risk'
+
+  return `Your ${jobTitle} profile shows ${exposureBand} based on recurring task patterns, tooling references, and skill signals detected in your resume. Focus on strengthening judgment-heavy and cross-functional capabilities to improve long-term insulation.`
 }
 
 export function scoreGaugeColor(score: number): string {

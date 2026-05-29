@@ -1,12 +1,34 @@
 import { analyzeResumeLocally } from '@/lib/analyzeResume'
+import { extractResumeTextFromFile, isAllowedResumeFile } from '@/lib/extractResumeFile'
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
-const FREE_DAILY_SCAN_LIMIT = 3
+export const runtime = 'nodejs'
 
-function startOfUtcDayIso(): string {
-  const now = new Date()
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString()
+function cleanExtractedText(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+async function resumeTextFromFormData(formData: FormData): Promise<string> {
+  const file = formData.get('file')
+  const pasted = String(formData.get('resumeText') ?? '').trim()
+
+  if (file instanceof File && file.size > 0) {
+    if (!isAllowedResumeFile(file)) {
+      throw new Error('Unsupported file type. Upload a .txt, .pdf, or .docx resume.')
+    }
+    return cleanExtractedText(await extractResumeTextFromFile(file))
+  }
+
+  if (pasted.length >= 40) {
+    return cleanExtractedText(pasted)
+  }
+
+  throw new Error('Upload a resume file or paste at least 40 characters of text.')
 }
 
 export async function POST(request: Request) {
@@ -21,25 +43,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { resumeText?: string; jobTitle?: string }
+  let formData: FormData
   try {
-    body = await request.json()
+    formData = await request.formData()
   } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid form data' }, { status: 400 })
   }
 
-  const resumeText = body.resumeText?.trim() ?? ''
-  const jobTitle = body.jobTitle?.trim() ?? ''
-
-  if (!resumeText || resumeText.length < 40) {
-    return NextResponse.json(
-      { error: 'Please paste at least a short resume or skills summary (40+ characters).' },
-      { status: 400 }
-    )
-  }
-
+  const jobTitle = String(formData.get('jobTitle') ?? '').trim()
   if (!jobTitle) {
     return NextResponse.json({ error: 'Target job title is required.' }, { status: 400 })
+  }
+
+  let resumeText: string
+  try {
+    resumeText = await resumeTextFromFormData(formData)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not read resume content.'
+    return NextResponse.json({ error: message }, { status: 400 })
+  }
+
+  if (resumeText.length < 40) {
+    return NextResponse.json(
+      { error: 'Could not extract enough text from that document. Try another file or paste your resume.' },
+      { status: 400 }
+    )
   }
 
   const { data: profile, error: profileError } = await supabase
@@ -52,26 +80,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
   }
 
-  if (!profile.is_premium) {
-    const { count, error: countError } = await supabase
-      .from('ai_scan_history')
-      .select('*', { count: 'exact', head: true })
-      .eq('profile_id', user.id)
-      .gte('created_at', startOfUtcDayIso())
-
-    if (countError) {
-      return NextResponse.json({ error: countError.message }, { status: 500 })
-    }
-
-    if ((count ?? 0) >= FREE_DAILY_SCAN_LIMIT) {
-      return NextResponse.json(
-        { error: 'Free daily scan limit reached', code: 'RATE_LIMIT' },
-        { status: 429 }
-      )
-    }
-  }
-
   const analysis = analyzeResumeLocally(resumeText, jobTitle)
+
+  if (!profile.is_premium) {
+    return NextResponse.json({
+      score: analysis.score,
+      jobTitle,
+      summary: analysis.freeSummary,
+      isPremium: false,
+    })
+  }
 
   const { error: insertError } = await supabase.from('ai_scan_history').insert({
     profile_id: profile.id,
@@ -79,6 +97,7 @@ export async function POST(request: Request) {
     resume_text: resumeText,
     overall_score: analysis.score,
     free_summary: analysis.freeSummary,
+    job_title: jobTitle,
   })
 
   if (insertError) {
@@ -90,6 +109,6 @@ export async function POST(request: Request) {
     jobTitle,
     summary: analysis.freeSummary,
     fullSummary: analysis.fullSummary,
-    isPremium: profile.is_premium,
+    isPremium: true,
   })
 }
