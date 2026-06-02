@@ -44,7 +44,7 @@ Current files in git (full chain):
 - `20260529120000_profiles_ai_scan_history.sql` (sync stub if applied from Dev)
 - `20260529130000_ai_scan_history_usage.sql` (sync stub if applied from Dev)
 - `20260530120000_gdpr_ccpa_compliance_data_layer.sql`
-- `20260531000000_add_is_premium_to_profiles.sql` (if remote still has `20260531`, run `docs/fix_is_premium_migration_version.sql`)
+- `20260531_add_is_premium_to_profiles.sql` (must match remote version `20260531` exactly — do not rename without updating `schema_migrations`)
 - `20260531120000_web_dev_git_supabase_sync_test.sql`
 - `20260601120000_schedule_data_minimization_cron.sql`
 - `20260601120100_ai_scan_history_job_title.sql`
