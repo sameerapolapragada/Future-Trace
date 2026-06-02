@@ -1,3 +1,20 @@
+/** Web app horizon palette (Future Trace logo). */
+export const horizon = {
+  background: '#000000',
+  surface: '#0F172A',
+  borderMuted: '#334155',
+  textPrimary: '#F8FAFC',
+  textSecondary: '#94A3B8',
+  accent: '#FDBB2D',
+  accentHover: '#E85D04',
+  accentMuted: 'rgba(253, 187, 45, 0.14)',
+  highlight: '#22D3EE',
+  highlightMuted: 'rgba(34, 211, 238, 0.14)',
+  drawerGradientStart: '#FDBB2D',
+  drawerGradientEnd: '#E85D04',
+  drawerText: '#0F172A',
+} as const
+
 export const colors = {
   background: '#0B0E14',
   backgroundGradient: ['#02060E', '#03111E', '#01050B'] as const,

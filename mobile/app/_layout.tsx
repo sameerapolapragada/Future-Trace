@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router'
 import { useEffect } from 'react'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { AuthProvider } from '../context/AuthContext'
 import { ScoreProvider } from '../context/ScoreContext'
 import { useAppFonts } from '../hooks/useAppFonts'
@@ -19,16 +20,18 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ScoreProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_bottom',
-            animationDuration: 320,
-          }}
-        />
-      </ScoreProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ScoreProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_bottom',
+              animationDuration: 320,
+            }}
+          />
+        </ScoreProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   )
 }

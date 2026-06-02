@@ -1,16 +1,6 @@
 import { Redirect } from 'expo-router'
-import { useAuth } from '../context/AuthContext'
 
+/** Opens the marketing explore experience (drawer + web-aligned sections). */
 export default function Index() {
-  const { user, isLoading } = useAuth()
-
-  if (isLoading) {
-    return null
-  }
-
-  if (user) {
-    return <Redirect href="/home" />
-  }
-
-  return <Redirect href="/sign-in" />
+  return <Redirect href="/(explore)" />
 }

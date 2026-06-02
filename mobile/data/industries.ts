@@ -1,0 +1,308 @@
+export type IndustryCard = {
+  id: string
+  name: string
+  earlyAI: string[]
+  currentAI: string[]
+  agenticFuture: string[]
+  mainRisks: string[]
+  mainOpportunities: string[]
+}
+
+export const industries: IndustryCard[] = [
+  {
+    id: 'healthcare',
+    name: 'Healthcare',
+    earlyAI: [
+      'Diagnostic imaging',
+      'Patient record systems',
+      'Medical billing',
+      'Appointment scheduling',
+      'Clinical decision support',
+    ],
+    currentAI: [
+      'AI-assisted diagnostics',
+      'Predictive analytics',
+      'Drug discovery',
+      'Personalized treatment',
+      'Remote patient monitoring',
+    ],
+    agenticFuture: [
+      'Autonomous surgical assistants',
+      'AI-driven treatment planning',
+      'Real-time health optimization',
+      'Preventive care automation',
+      'Integrated care coordination',
+    ],
+    mainRisks: [
+      'Data privacy concerns',
+      'Diagnostic accuracy liability',
+      'High implementation costs',
+      'Resistance from practitioners',
+    ],
+    mainOpportunities: [
+      'Improved patient outcomes',
+      'Cost reduction',
+      'Earlier disease detection',
+      'Personalized medicine at scale',
+    ],
+  },
+  {
+    id: 'finance',
+    name: 'Finance',
+    earlyAI: [
+      'Fraud detection',
+      'Credit scoring',
+      'Automated trading',
+      'Risk assessment',
+      'Customer segmentation',
+    ],
+    currentAI: [
+      'Robo-advisors',
+      'Real-time risk analysis',
+      'Sentiment analysis',
+      'Chatbot support',
+      'Algorithmic trading',
+    ],
+    agenticFuture: [
+      'Autonomous portfolio management',
+      'AI-driven compliance',
+      'Predictive market analysis',
+      'Dynamic pricing models',
+      'Intelligent fraud prevention',
+    ],
+    mainRisks: [
+      'Regulatory compliance',
+      'Market volatility',
+      'Algorithmic bias',
+      'Security vulnerabilities',
+    ],
+    mainOpportunities: [
+      '24/7 financial services',
+      'Reduced operational costs',
+      'Personalized advice at scale',
+      'Faster decision-making',
+    ],
+  },
+  {
+    id: 'crm-sales',
+    name: 'CRM / Sales',
+    earlyAI: [
+      'Rule-based lead scoring',
+      'Email template automation',
+      'Pipeline stage tracking',
+      'Basic CRM analytics',
+      'Contact segmentation',
+    ],
+    currentAI: [
+      'Predictive lead scoring',
+      'Personalized outreach',
+      'Conversational sales assistants',
+      'Deal intelligence',
+      'Revenue forecasting',
+    ],
+    agenticFuture: [
+      'Autonomous outreach agents',
+      'Negotiation support copilots',
+      'Pipeline management automation',
+      'Dynamic pricing recommendations',
+      'End-to-end sales orchestration',
+    ],
+    mainRisks: [
+      'Automation fatigue',
+      'Over-personalization privacy concerns',
+      'Loss of human relationship building',
+      'Inaccurate lead prioritization',
+    ],
+    mainOpportunities: [
+      'Scale personalized selling',
+      'Higher conversion rates',
+      'Shorter sales cycles',
+      'Data-driven pipeline optimization',
+    ],
+  },
+  {
+    id: 'customer-support',
+    name: 'Customer Support',
+    earlyAI: [
+      'Interactive voice response (IVR)',
+      'Scripted FAQ chatbots',
+      'Ticket routing rules',
+      'Knowledge base search',
+      'Call center analytics',
+    ],
+    currentAI: [
+      'AI chatbots',
+      'Sentiment analysis',
+      'Intelligent agent routing',
+      'Automated ticket tagging',
+      'Self-service deflection',
+    ],
+    agenticFuture: [
+      'Autonomous ticket resolution',
+      'Cross-system issue coordination',
+      'Proactive support outreach',
+      'Continuous learning from interactions',
+      'Multi-channel support agents',
+    ],
+    mainRisks: [
+      'Poor handling of complex cases',
+      'Customer frustration',
+      'Brand damage from bad automation',
+      'Escalation failures',
+    ],
+    mainOpportunities: [
+      'Reduced resolution time',
+      'Lower support costs',
+      'Higher customer satisfaction',
+      'Free agents for high-value interactions',
+    ],
+  },
+  {
+    id: 'education',
+    name: 'Education',
+    earlyAI: [
+      'Adaptive tutoring prototypes',
+      'Rule-based tutoring systems',
+      'Automated grading rubrics',
+      'Learning management analytics',
+      'Content recommendation engines',
+    ],
+    currentAI: [
+      'Personalized learning paths',
+      'Automated grading',
+      'AI tutoring assistants',
+      'Engagement analytics',
+      'Content generation for curricula',
+    ],
+    agenticFuture: [
+      'Personal learning agents',
+      'Curriculum design automation',
+      'Continuous progress monitoring',
+      'Adaptive mentorship at scale',
+      'Skills gap remediation agents',
+    ],
+    mainRisks: [
+      'Equity and access gaps',
+      'Over-reliance on automated feedback',
+      'Academic integrity concerns',
+      'Reduced human mentorship',
+    ],
+    mainOpportunities: [
+      'Personalized scalable education',
+      'Continual skill development',
+      'Earlier intervention for struggling learners',
+      'Expanded access to quality instruction',
+    ],
+  },
+  {
+    id: 'legal',
+    name: 'Legal',
+    earlyAI: [
+      'Document search tools',
+      'Rule-based contract analysis',
+      'Citation lookup systems',
+      'Case law indexing',
+      'Template automation',
+    ],
+    currentAI: [
+      'Contract review assistants',
+      'Legal research copilots',
+      'Document automation',
+      'Due diligence summarization',
+      'Compliance monitoring',
+    ],
+    agenticFuture: [
+      'Autonomous brief preparation',
+      'Discovery management agents',
+      'Compliance workflow automation',
+      'Real-time regulatory monitoring',
+      'Multi-jurisdiction research agents',
+    ],
+    mainRisks: [
+      'Misinterpretation of law',
+      'Liability and compliance concerns',
+      'Hallucinated legal citations',
+      'Confidentiality breaches',
+    ],
+    mainOpportunities: [
+      'Faster legal services',
+      'Lower client costs',
+      'Improved access to legal help',
+      'Reduced repetitive document work',
+    ],
+  },
+  {
+    id: 'software-engineering',
+    name: 'Software Engineering',
+    earlyAI: [
+      'Code templates',
+      'Static analysis tools',
+      'Linting and formatting',
+      'Test generation helpers',
+      'Documentation generators',
+    ],
+    currentAI: [
+      'AI pair programmers',
+      'Code completion',
+      'Automated testing assistants',
+      'Bug triage and summarization',
+      'Refactoring suggestions',
+    ],
+    agenticFuture: [
+      'Autonomous module design',
+      'Self-maintaining CI/CD pipelines',
+      'End-to-end feature agents',
+      'Production incident response bots',
+      'Cross-repo migration agents',
+    ],
+    mainRisks: [
+      'Automation of complex design decisions',
+      'Security of generated code',
+      'Over-reliance on AI suggestions',
+      'Technical debt from unreviewed output',
+    ],
+    mainOpportunities: [
+      'Higher developer productivity',
+      'Faster iteration cycles',
+      'Reduced boilerplate work',
+      'More time for architecture and review',
+    ],
+  },
+  {
+    id: 'marketing',
+    name: 'Marketing',
+    earlyAI: [
+      'Rule-based segmentation',
+      'Basic campaign automation',
+      'A/B test scheduling',
+      'Email drip workflows',
+      'Simple attribution models',
+    ],
+    currentAI: [
+      'Content generation',
+      'Audience targeting',
+      'Campaign optimization',
+      'Social listening',
+      'Creative variant testing',
+    ],
+    agenticFuture: [
+      'Autonomous campaign agents',
+      'Real-time spend optimization',
+      'Hyper-personalized content at scale',
+      'Cross-channel experiment orchestration',
+      'Brand-safe creative pipelines',
+    ],
+    mainRisks: [
+      'Misinformation from generated content',
+      'Brand safety issues',
+      'Over-automation of creative strategy',
+      'Privacy and consent violations',
+    ],
+    mainOpportunities: [
+      'Scale creative production',
+      'Personalized customer experiences',
+      'Higher ROI on ad spend',
+      'Faster campaign iteration',
+    ],
+  },
+]
