@@ -10,46 +10,49 @@ cp .env.example .env
 npm install
 ```
 
-## Run on a **physical phone** (fixes “Failed to download remote update”)
+## Run the app
 
-That error means Expo Go on your phone could not reach the JS bundle on your Mac—not Supabase or git.
+### Simulator (recommended)
 
 ```bash
-cd mobile
+npm run start:clear
+# Press i (iOS) or a (Android)
+```
+
+### Physical phone (same Wi‑Fi as your Mac)
+
+```bash
 npm run start:phone
 ```
 
-1. Wait until the terminal shows a **QR code** and a `exp://…` URL (tunnel, not `127.0.0.1`).
-2. On your phone: **force-quit Expo Go** → open again (or clear Expo Go storage).
-3. Scan the **new** QR from this terminal only (do not reuse an old link).
-4. Ensure **Expo Go supports SDK 54** ([expo.dev/go](https://expo.dev/go)).
+1. Wait for Metro and the **QR code**.
+2. Use the URL with your Mac’s **LAN IP** (e.g. `exp://192.168.1.x:8081`) — **not** `127.0.0.1`.
+3. Phone and Mac must be on the **same Wi‑Fi**. Turn off VPN if it still fails.
+4. Force-quit Expo Go, reopen, scan the **new** QR.
 
-If tunnel is slow or fails, try same Wi‑Fi + LAN:
-
-```bash
-npm run start:reset
-npm run start:clear
-```
-
-Use the QR that shows your Mac’s **LAN IP** (e.g. `exp://192.168.x.x:8081`), not `127.0.0.1`.
-
-## Run on **simulator** (easiest)
+### Tunnel (only if LAN does not work)
 
 ```bash
-cd mobile
-npm run start:clear
-# Press i (iOS Simulator) or a (Android Emulator)
+npm run start:tunnel
 ```
+
+Requires `@expo/ngrok` (installed as a dev dependency). If you see:
+
+`CommandError: TypeError: Cannot read properties of undefined (reading 'body')`
+
+that means **Expo’s ngrok tunnel failed** (service limit, outage, or network block)—not your React code. Use **`npm run start:phone`** (LAN) or the **simulator** instead.
+
+## Common errors
+
+| Message | What it means | Fix |
+|--------|----------------|-----|
+| `Failed to download remote update` | Phone can’t reach Metro | Same Wi‑Fi + `npm run start:phone`, or simulator |
+| `Cannot read properties of undefined (reading 'body')` | `--tunnel` / ngrok failed | Don’t use tunnel; use `start:phone` or simulator |
+| Port 8081 in use | Old Metro still running | `npm run start:reset` then start again |
 
 ## Navigation
 
-Gold-gradient **drawer** (matches web):
-
-- Home  
-- AI Evolution Timeline  
-- Industry Adoption Waves  
-- Jobs Affected by AI Evolution  
-- What Comes Next  
+Gold-gradient **drawer** (matches web): Home, AI Evolution Timeline, Industry Adoption Waves, Jobs Affected by AI, What Comes Next.
 
 ## Branch policy
 
