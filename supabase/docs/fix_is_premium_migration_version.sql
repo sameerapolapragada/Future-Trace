@@ -1,6 +1,4 @@
--- OPTIONAL: only run if you renamed the git file to 20260531000000 AND updated remote.
--- Default fix is to keep git file as 20260531_add_is_premium_to_profiles.sql (matches remote as-is).
---
+-- Applied on Web-Dev: aligns remote version with 20260531000000_add_is_premium_to_profiles.sql
 -- update supabase_migrations.schema_migrations
 -- set version = '20260531000000'
 -- where version = '20260531';
