@@ -91,14 +91,14 @@ function AuthPageContent() {
 
   return (
     <div className="w-full">
-      <div className="mb-6 flex rounded-xl bg-trace-surface/80 p-1 ring-1 ring-sky-900/40">
+      <div className="mb-6 flex rounded-xl bg-trace-surface p-1 ring-1 ring-sky-900/40">
         <button
           type="button"
           onClick={() => switchMode('signin')}
           disabled={loading}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
             !isSignUp
-              ? 'bg-sky-500 text-white shadow-sm'
+              ? 'bg-accent text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -110,7 +110,7 @@ function AuthPageContent() {
           disabled={loading}
           className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-colors ${
             isSignUp
-              ? 'bg-sky-500 text-white shadow-sm'
+              ? 'bg-accent text-white shadow-sm'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -130,7 +130,7 @@ function AuthPageContent() {
       {error ? (
         <div
           role="alert"
-          className="mt-4 rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300"
+          className="mt-4 rounded-lg border border-red-500/30 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {error}
         </div>
@@ -139,7 +139,7 @@ function AuthPageContent() {
       {successMessage ? (
         <div
           role="status"
-          className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200"
+          className="mt-4 rounded-lg border border-accent/30 bg-accentMuted px-4 py-3 text-sm text-accent"
         >
           {successMessage}
         </div>
@@ -160,7 +160,7 @@ function AuthPageContent() {
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               disabled={loading}
-              className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none ring-sky-400/0 transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
+              className="w-full rounded-lg border border-trace-border bg-trace-surface px-4 py-3 text-trace-foreground placeholder:text-slate-500 outline-none ring-sky-400/0 transition focus:border-highlight focus:ring-2 focus:ring-highlight/40 disabled:opacity-60"
               placeholder="Jane Doe"
             />
           </div>
@@ -179,7 +179,7 @@ function AuthPageContent() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={loading}
-            className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
+            className="w-full rounded-lg border border-trace-border bg-trace-surface px-4 py-3 text-trace-foreground placeholder:text-slate-500 outline-none transition focus:border-highlight focus:ring-2 focus:ring-highlight/40 disabled:opacity-60"
             placeholder="you@example.com"
           />
         </div>
@@ -198,7 +198,7 @@ function AuthPageContent() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
-            className="w-full rounded-lg border border-sky-800/50 bg-trace-surface px-4 py-3 text-slate-100 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/40 disabled:opacity-60"
+            className="w-full rounded-lg border border-trace-border bg-trace-surface px-4 py-3 text-trace-foreground placeholder:text-slate-500 outline-none transition focus:border-highlight focus:ring-2 focus:ring-highlight/40 disabled:opacity-60"
             placeholder="••••••••"
           />
         </div>
@@ -206,7 +206,7 @@ function AuthPageContent() {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-sky-500 py-3 text-sm font-semibold text-white transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-accent py-3 text-sm font-semibold text-white transition hover:bg-accentHover disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             <>
@@ -222,7 +222,7 @@ function AuthPageContent() {
       <p className="mt-6 text-center">
         <Link
           href="/auth/forgot-password"
-          className="text-sm font-medium text-sky-400 hover:text-sky-300"
+          className="text-sm font-medium text-accent hover:text-highlight"
         >
           Forgot your password?
         </Link>
@@ -234,7 +234,7 @@ function AuthPageContent() {
 function AuthPageFallback() {
   return (
     <div className="flex w-full items-center justify-center py-16">
-      <Loader2 className="h-8 w-8 animate-spin text-sky-300" aria-label="Loading" />
+      <Loader2 className="h-8 w-8 animate-spin text-highlight" aria-label="Loading" />
     </div>
   )
 }

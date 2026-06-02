@@ -55,9 +55,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${inter.className} min-h-screen bg-black font-sans antialiased`}>
+      <body className={`${inter.className} min-h-screen font-sans text-textPrimary antialiased`}>
         <PWARegister />
-        <div className="relative flex min-h-screen w-full flex-col bg-black">
+        <div className="relative z-[1] flex min-h-screen w-full flex-col">
           <main className="min-h-screen w-full flex-1 px-4 py-8 sm:px-6 md:px-8 lg:px-12 sm:py-10 md:py-12">
             {children}
           </main>

@@ -11,6 +11,25 @@ module.exports = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
       colors: {
+        /* Clean Horizon semantic tokens */
+        background: 'var(--horizon-background)',
+        surface: 'var(--horizon-surface)',
+        borderMuted: 'var(--horizon-border-muted)',
+        textPrimary: 'var(--horizon-text-primary)',
+        textSecondary: 'var(--horizon-text-secondary)',
+        accent: {
+          DEFAULT: 'var(--horizon-accent)',
+          hover: 'var(--horizon-accent-hover)',
+          muted: 'var(--horizon-accent-muted)',
+        },
+        accentMuted: 'var(--horizon-accent-muted)',
+        accentHover: 'var(--horizon-accent-hover)',
+        highlight: {
+          DEFAULT: 'var(--horizon-highlight)',
+          hover: 'var(--horizon-highlight-hover)',
+          muted: 'var(--horizon-highlight-muted)',
+        },
+        /* Legacy trace (aliases) */
         trace: {
           bg: 'var(--trace-background)',
           surface: 'var(--trace-surface)',
@@ -23,6 +42,30 @@ module.exports = {
           deep: 'var(--trace-accent-deep)',
           border: 'var(--trace-border)',
           card: 'var(--trace-card)',
+        },
+        brand: {
+          DEFAULT: '#FDBB2D',
+          hover: '#E85D04',
+          light: 'rgba(253, 187, 45, 0.14)',
+          muted: '#F59E0B',
+          deep: '#C2410C',
+        },
+        status: {
+          success: {
+            bg: 'var(--status-success-bg)',
+            border: 'var(--status-success-border)',
+            text: 'var(--status-success-text)',
+          },
+          warning: {
+            bg: 'var(--status-warning-bg)',
+            border: 'var(--status-warning-border)',
+            text: 'var(--status-warning-text)',
+          },
+          anomaly: {
+            bg: 'var(--status-anomaly-bg)',
+            border: 'var(--status-anomaly-border)',
+            text: 'var(--status-anomaly-text)',
+          },
         },
         pwa: {
           background: 'var(--pwa-background)',
@@ -43,8 +86,10 @@ module.exports = {
         trace: 'var(--trace-border)',
       },
       boxShadow: {
-        trace: '0 0 24px rgba(14, 165, 233, 0.25)',
-        'trace-lg': '0 0 40px rgba(14, 165, 233, 0.35)',
+        horizon: '0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04)',
+        'horizon-md': '0 8px 32px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05)',
+        trace: '0 4px 24px rgba(0, 0, 0, 0.35)',
+        'trace-lg': '0 8px 32px rgba(0, 0, 0, 0.45)',
       },
       keyframes: {
         'auth-logo-enter': {

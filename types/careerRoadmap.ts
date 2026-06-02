@@ -1,4 +1,6 @@
 /** Structured career transition output — core free-tier value proposition. */
+import type { TaskResources } from '@/types/premiumRoadmapResources'
+
 export interface IntelligenceProfile {
   strengths: string[]
   emergingAdvantages: string[]
@@ -6,12 +8,30 @@ export interface IntelligenceProfile {
   highYieldOpportunityZones: string[]
 }
 
+export type SkillTaskSkillType = 'Technical' | 'Discovery' | 'Metrics' | 'Integration' | 'Strategy'
+
+export interface SkillTask {
+  id: string
+  label: string
+  skillType?: SkillTaskSkillType
+  /** Human-readable estimate, e.g. "45 min". */
+  estimatedDuration?: string
+  /** Definition-of-done deliverable (also mirrored on resources when enriched). */
+  actionItem?: string
+  resources?: TaskResources
+}
+
 export interface SkillMilestone {
   /** Tactical capability the user builds in this phase. */
   milestone: string
   /** Short phase label shown beneath the node (e.g. "Phase 1"). */
   phaseLabel: string
+  /** Premium roadmap micro-tasks for interactive check-off UI. */
+  tasks?: SkillTask[]
 }
+
+/** Alias used in premium roadmap UI and legacy payloads. */
+export type SkillPipelineStep = SkillMilestone
 
 export interface CareerRoadmap {
   currentPosition: string

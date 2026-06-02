@@ -19,17 +19,17 @@ const iconFor = (id: string) => {
     case 'healthcare':
       return <Heart className="h-5 w-5 text-rose-400" />
     case 'finance':
-      return <BarChart2 className="h-5 w-5 text-emerald-400" />
+      return <BarChart2 className="h-5 w-5 text-highlight" />
     case 'crm-sales':
-      return <Users className="h-5 w-5 text-sky-300" />
+      return <Users className="h-5 w-5 text-highlight" />
     case 'customer-support':
-      return <Headphones className="h-5 w-5 text-sky-200" />
+      return <Headphones className="h-5 w-5 text-accent" />
     case 'education':
-      return <BookOpen className="h-5 w-5 text-sky-400" />
+      return <BookOpen className="h-5 w-5 text-accent" />
     case 'legal':
       return <Scale className="h-5 w-5 text-slate-300" />
     case 'software-engineering':
-      return <Code className="h-5 w-5 text-sky-400" />
+      return <Code className="h-5 w-5 text-accent" />
     case 'marketing':
       return <Megaphone className="h-5 w-5 text-orange-400" />
     default:
@@ -65,17 +65,17 @@ function IndustryAccordion({ industry }: { industry: IndustryCard }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <article className="overflow-hidden rounded-lg border border-sky-900/40 bg-trace-surface/50">
+    <article className="overflow-hidden rounded-lg border border-trace-border bg-trace-surface">
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         aria-expanded={open}
-        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-trace-surface/80 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-inset"
+        className="flex w-full items-center gap-3 px-4 py-3.5 text-left transition hover:bg-trace-surface focus:outline-none focus:ring-2 focus:ring-highlight focus:ring-inset"
       >
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-sky-900/40 bg-black/80">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-trace-border bg-slate-100">
           {iconFor(industry.id)}
         </div>
-        <h3 className="min-w-0 flex-1 text-base font-semibold text-slate-100">{industry.name}</h3>
+        <h3 className="min-w-0 flex-1 text-base font-semibold text-trace-foreground">{industry.name}</h3>
         <ChevronDown
           className={`h-5 w-5 shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
           aria-hidden
@@ -83,23 +83,23 @@ function IndustryAccordion({ industry }: { industry: IndustryCard }) {
       </button>
 
       {open && (
-        <div className="space-y-4 border-t border-sky-900/40 px-4 py-4">
+        <div className="space-y-4 border-t border-trace-border px-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <BulletSection title="Early AI" items={industry.earlyAI} titleClassName="text-cyan-400" />
-            <BulletSection title="Current AI" items={industry.currentAI} titleClassName="text-sky-400" />
+            <BulletSection title="Current AI" items={industry.currentAI} titleClassName="text-accent" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <BulletSection title="Main risks" items={industry.mainRisks} titleClassName="text-orange-400" />
             <BulletSection
               title="Main opportunities"
               items={industry.mainOpportunities}
-              titleClassName="text-emerald-400"
+              titleClassName="text-highlight"
             />
           </div>
           <BulletSection
             title="Agentic Future"
             items={industry.agenticFuture}
-            titleClassName="text-violet-400"
+            titleClassName="text-highlight"
           />
         </div>
       )}

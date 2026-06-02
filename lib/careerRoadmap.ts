@@ -1,3 +1,6 @@
+import { formatJobTitle } from '@/lib/formatJobTitle'
+import { parseSkillTask } from '@/lib/enrichSkillTasks'
+import { enrichSkillPipeline } from '@/lib/premiumRoadmapTasks'
 import type { CareerRoadmap, IntelligenceProfile, SkillMilestone } from '@/types/careerRoadmap'
 
 const DEFAULT_SKILL_SPRINT = '1-Month Skill Sprint'
@@ -158,7 +161,7 @@ const DEFAULT_TEMPLATE: RouteTemplate = {
 }
 
 function normalizeRole(value: string): string {
-  return value.trim() || 'Your current role'
+  return formatJobTitle(value) || 'Your current role'
 }
 
 function isSalesforceToProductTransition(current: string, destination: string): boolean {
@@ -321,9 +324,16 @@ function parseSkillMilestone(value: unknown): SkillMilestone | null {
     return null
   }
 
+  const tasks = Array.isArray(record.tasks)
+    ? record.tasks
+        .map((task) => parseSkillTask(task))
+        .filter((task): task is NonNullable<ReturnType<typeof parseSkillTask>> => task !== null)
+    : undefined
+
   return {
     milestone: record.milestone,
     phaseLabel: record.phaseLabel,
+    tasks,
   }
 }
 
@@ -400,7 +410,7 @@ function buildRoadmapFields(
     estimatedJourneyMonths: months ?? template.baseMonths,
     nextMilestone: personalizeActionSprint(template.actionSprint, resumeText, destination),
     biggestObstacle: leveragePoint,
-    skillAcquisitionPipeline: template.pipeline.map((step) => ({ ...step })),
+    skillAcquisitionPipeline: enrichSkillPipeline(template.pipeline.map((step) => ({ ...step }))),
     immediate30DayTarget: DEFAULT_SKILL_SPRINT,
     intelligenceProfile: buildIntelligenceProfile(
       template,

@@ -48,16 +48,16 @@ const sections = [
 
 export default function MethodologyPage() {
   return (
-    <article className="mx-auto w-full max-w-3xl bg-black text-slate-300">
+    <article className="mx-auto w-full max-w-3xl bg-trace-bg text-trace-muted">
       <header className="mb-8">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-400 transition hover:text-sky-300"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-accent transition hover:text-highlight"
         >
           <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
           Back to Dashboard
         </Link>
-        <h1 className="mt-4 text-2xl font-bold text-slate-100 sm:text-3xl">
+        <h1 className="mt-4 text-2xl font-bold text-trace-foreground sm:text-3xl">
           Methodology &amp; Data Transparency
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
@@ -69,7 +69,7 @@ export default function MethodologyPage() {
       <div className="space-y-8">
         {sections.map((section) => (
           <section key={section.title}>
-            <h2 className="text-base font-semibold text-slate-100">{section.title}</h2>
+            <h2 className="text-base font-semibold text-trace-foreground">{section.title}</h2>
             <div className="mt-3 space-y-3">
               {section.body.map((paragraph) => (
                 <p key={paragraph.slice(0, 40)} className="text-sm leading-relaxed text-slate-400">

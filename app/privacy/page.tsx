@@ -10,11 +10,11 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <article className="mx-auto min-h-screen max-w-md bg-black px-6 py-8 text-slate-100">
-      <header className="mb-8 border-b border-sky-900/40 pb-6">
+    <article className="mx-auto min-h-screen max-w-md bg-trace-bg px-6 py-8 text-trace-foreground">
+      <header className="mb-8 border-b border-trace-border pb-6">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-300 transition hover:text-sky-200"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-highlight transition hover:text-accent"
         >
           <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
           Back
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
 
       <div className="space-y-8 text-sm leading-relaxed text-slate-300">
         <section aria-labelledby="data-collection-heading">
-          <h2 id="data-collection-heading" className="text-lg font-semibold text-slate-100">
+          <h2 id="data-collection-heading" className="text-lg font-semibold text-trace-foreground">
             Data Collection
           </h2>
           <p className="mt-3">
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         </section>
 
         <section aria-labelledby="data-minimization-heading">
-          <h2 id="data-minimization-heading" className="text-lg font-semibold text-slate-100">
+          <h2 id="data-minimization-heading" className="text-lg font-semibold text-trace-foreground">
             Data Minimization
           </h2>
           <p className="mt-3">
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
         </section>
 
         <section aria-labelledby="premium-storage-heading">
-          <h2 id="premium-storage-heading" className="text-lg font-semibold text-slate-100">
+          <h2 id="premium-storage-heading" className="text-lg font-semibold text-trace-foreground">
             Premium Data Storage
           </h2>
           <p className="mt-3">
@@ -85,7 +85,7 @@ export default function PrivacyPage() {
         </section>
 
         <section aria-labelledby="data-erasure-heading">
-          <h2 id="data-erasure-heading" className="text-lg font-semibold text-slate-100">
+          <h2 id="data-erasure-heading" className="text-lg font-semibold text-trace-foreground">
             Data Erasure (Right to be Forgotten)
           </h2>
           <p className="mt-3">
@@ -104,14 +104,14 @@ export default function PrivacyPage() {
             immutable record of the deletion event itself.
           </p>
           <p className="mt-3">
-            <Link href="/dashboard" className="font-medium text-sky-300 hover:text-sky-200">
+            <Link href="/dashboard" className="font-medium text-highlight hover:text-accent">
               Go to Profile settings
             </Link>
           </p>
         </section>
 
         <section aria-labelledby="your-rights-heading">
-          <h2 id="your-rights-heading" className="text-lg font-semibold text-slate-100">
+          <h2 id="your-rights-heading" className="text-lg font-semibold text-trace-foreground">
             Your Rights
           </h2>
           <p className="mt-3">
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
         </section>
       </div>
 
-      <footer className="mt-12 border-t border-sky-900/40 pt-6 text-xs text-slate-500">
+      <footer className="mt-12 border-t border-trace-border pt-6 text-xs text-slate-500">
         <p>© 2026 Future Trace. All rights reserved.</p>
       </footer>
     </article>

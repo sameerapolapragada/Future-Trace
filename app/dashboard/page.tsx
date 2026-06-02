@@ -7,12 +7,18 @@ import NewAnalysisInputView from '@/components/NewAnalysisInputView'
 import PremiumUpgradeButton from '@/components/PremiumUpgradeButton'
 import { buildRoadmapSummary, scoreExposureLabel, scoreGaugeColor } from '@/lib/analyzeResume'
 import { buildDefaultCareerRoadmap, buildRoadmapShareText, parseCareerRoadmap } from '@/lib/careerRoadmap'
+import {
+  formatBlueprintDurationLabel,
+  MACRO_PROGRESS_SECTION_LABEL,
+  MICRO_SPRINT_WORKSPACE_LABEL,
+} from '@/lib/careerJourneyLabels'
+import { formatJobTitle } from '@/lib/formatJobTitle'
+import { exposureRiskBadgeClass } from '@/theme/statusBadges'
 import type { CareerRoadmap } from '@/types/careerRoadmap'
 import { triggerComplianceLog } from '@/utils/supabase/compliance'
 import { createClient } from '@/utils/supabase/client'
 import {
   Bell,
-  Check,
   ChevronRight,
   Download,
   History,
@@ -21,7 +27,7 @@ import {
   Loader2,
   Lock,
   Mail,
-  PersonStanding,
+  Map as MapIcon,
   RefreshCw,
   Settings,
   Share2,
@@ -30,8 +36,8 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 type DashboardView = 'shield' | 'profile'
@@ -48,19 +54,19 @@ type ScanRow = {
 function DashboardSkeleton() {
   return (
     <div className="flex animate-pulse flex-col gap-6">
-      <div className="h-8 w-48 rounded-md bg-sky-950/80" />
-      <div className="h-4 w-64 rounded-md bg-sky-950/60" />
-      <div className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-6">
+      <div className="h-8 w-48 rounded-md bg-accentMuted" />
+      <div className="h-4 w-64 rounded-md bg-accentMuted" />
+      <div className="rounded-2xl border border-trace-border bg-trace-surface p-6">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="h-20 rounded-xl bg-sky-950/60" />
-          <div className="h-20 rounded-xl bg-sky-950/50" />
+          <div className="h-20 rounded-xl bg-accentMuted" />
+          <div className="h-20 rounded-xl bg-accentMuted" />
         </div>
-        <div className="mx-auto mt-4 h-8 w-40 rounded-full bg-sky-950/60" />
+        <div className="mx-auto mt-4 h-8 w-40 rounded-full bg-accentMuted" />
         <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          <div className="h-24 rounded-xl bg-sky-950/60" />
-          <div className="h-24 rounded-xl bg-sky-950/50" />
+          <div className="h-24 rounded-xl bg-accentMuted" />
+          <div className="h-24 rounded-xl bg-accentMuted" />
         </div>
-        <div className="mt-5 h-28 rounded-xl bg-sky-950/40" />
+        <div className="mt-5 h-28 rounded-xl bg-accentMuted" />
       </div>
     </div>
   )
@@ -70,15 +76,6 @@ const LOADING_CAPTIONS = [
   'Mapping your current role to destination pathways...',
   'Estimating transition milestones and timeline...',
   'Building your personalized career route...',
-]
-
-const PREMIUM_PLACEHOLDER_LINES = [
-  'Bullet 1 · Automate-prone reporting workflows flagged in Q2 task cluster',
-  'Bullet 2 · CRM scheduling patterns overlap with emerging agent tooling',
-  'Bullet 3 · Leadership narrative underweighted vs. execution-heavy phrasing',
-  'Day 4 · Stakeholder synthesis micro-lesson (12 min)',
-  'Day 8 · Cross-functional decision framing drill',
-  'Day 14 · AI-resistant portfolio artifact workshop',
 ]
 
 type ShieldTab = 'analysis' | 'history'
@@ -96,6 +93,8 @@ type AnalysisResultCardProps = {
   roadmap: CareerRoadmap
   isPremium: boolean
   userId: string | null
+  onPremiumStatusChange?: (isPremium: boolean) => void
+  premiumRefreshToken?: number
 }
 
 function ShareAnalysisMenu({
@@ -129,7 +128,7 @@ function ShareAnalysisMenu({
     <div
       role="menu"
       aria-label="Share analysis"
-      className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-xl border border-sky-900/40 bg-trace-surface shadow-lg shadow-black/40"
+      className="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-xl border border-trace-border bg-trace-surface shadow-lg shadow-black/40"
     >
       {channels.map((channel) => (
         <a
@@ -139,12 +138,12 @@ function ShareAnalysisMenu({
           target="_blank"
           rel="noopener noreferrer"
           onClick={onClose}
-          className="flex items-center gap-2.5 border-b border-sky-900/30 px-3 py-2.5 text-sm text-slate-200 transition last:border-b-0 hover:bg-sky-950/40 hover:text-slate-50"
+          className="flex items-center gap-2.5 border-b border-trace-border px-3 py-2.5 text-sm text-textSecondary transition-all duration-200 last:border-b-0 hover:bg-accentMuted hover:text-textPrimary"
         >
           {channel.id === 'linkedin' ? (
-            <Linkedin className="h-4 w-4 shrink-0 text-sky-400" aria-hidden />
+            <Linkedin className="h-4 w-4 shrink-0 text-accent" aria-hidden />
           ) : (
-            <Share2 className="h-4 w-4 shrink-0 text-sky-400" aria-hidden />
+            <Share2 className="h-4 w-4 shrink-0 text-accent" aria-hidden />
           )}
           {channel.label}
         </a>
@@ -157,6 +156,8 @@ function AnalysisResultCard({
   roadmap,
   isPremium,
   userId,
+  onPremiumStatusChange,
+  premiumRefreshToken,
 }: AnalysisResultCardProps) {
   const [shareOpen, setShareOpen] = useState(false)
   const shareRef = useRef<HTMLDivElement>(null)
@@ -192,7 +193,7 @@ function AnalysisResultCard({
         aria-label="Share pathway"
         aria-expanded={shareOpen}
         aria-haspopup="menu"
-        className="rounded-lg border border-sky-900/40 bg-black/40 p-2 text-slate-400 backdrop-blur transition hover:border-sky-700/50 hover:text-slate-100"
+        className="rounded-lg border border-trace-border bg-slate-100 p-2 text-textSecondary backdrop-blur transition hover:border-borderMuted hover:text-textPrimary"
       >
         <Share2 className="h-4 w-4" aria-hidden />
       </button>
@@ -207,6 +208,8 @@ function AnalysisResultCard({
       actions={shareButton}
       isPremium={isPremium}
       userId={userId}
+      onPremiumStatusChange={onPremiumStatusChange}
+      premiumRefreshToken={premiumRefreshToken}
     />
   )
 }
@@ -215,12 +218,12 @@ function MethodologyDataTransparencyCard() {
   return (
     <aside
       aria-labelledby="methodology-heading"
-      className="rounded-xl border border-sky-900/40 bg-trace-surface/40 p-4 text-xs text-slate-400"
+      className="rounded-xl border border-trace-border bg-trace-surface p-4 text-xs text-textSecondary"
     >
       <div className="flex items-start gap-2.5">
-        <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-400" aria-hidden />
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
         <div className="min-w-0">
-          <h4 id="methodology-heading" className="text-xs font-semibold leading-snug text-slate-100">
+          <h4 id="methodology-heading" className="text-xs font-semibold leading-snug text-textPrimary">
             How Your Transition Pathway Is Built
           </h4>
           <p className="mt-2 leading-relaxed">
@@ -229,24 +232,24 @@ function MethodologyDataTransparencyCard() {
           </p>
           <ul className="mt-3 list-none space-y-2.5 leading-relaxed">
             <li>
-              <span className="font-semibold text-slate-200">O*NET occupational tasks</span>
+              <span className="font-semibold text-textPrimary">O*NET occupational tasks</span>
               {' — '}
               role capability requirements for each stage of your recommended route.
             </li>
             <li>
-              <span className="font-semibold text-slate-200">Labor market trend signals</span>
+              <span className="font-semibold text-textPrimary">Labor market trend signals</span>
               {' — '}
               industry momentum shaping realistic journey timelines.
             </li>
             <li>
-              <span className="font-semibold text-slate-200">Resume skill extraction</span>
+              <span className="font-semibold text-textPrimary">Resume skill extraction</span>
               {' — '}
               milestone and leverage-point callouts derived from your stated experience.
             </li>
           </ul>
           <Link
             href="/methodology"
-            className="mt-3 inline-flex items-center gap-0.5 font-medium text-sky-400 transition hover:text-sky-300"
+            className="mt-3 inline-flex items-center gap-0.5 font-medium text-accent transition hover:text-accent"
           >
             View Technical Whitepaper Documentation
             <ChevronRight className="h-3.5 w-3.5" aria-hidden />
@@ -259,7 +262,7 @@ function MethodologyDataTransparencyCard() {
 
 function TemporaryScanNotice() {
   return (
-    <p className="rounded-xl border border-sky-900/30 bg-trace-surface/30 px-4 py-3 text-xs leading-relaxed text-slate-500">
+    <p className="rounded-xl border border-borderMuted bg-surface px-4 py-3 text-xs leading-relaxed text-textSecondary">
       This roadmap preview is temporary. Upgrade to premium to save your resume, unlock historical
       tracking, and get your full 30-day action plan.
     </p>
@@ -287,33 +290,59 @@ type HistoryEntry = {
   createdAt: string
 }
 
-function formatHistoryTimestamp(iso: string): string {
+function formatHistoryMonthYear(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     month: 'short',
-    day: 'numeric',
     year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
   })
+}
+
+function historyRoleKey(entry: HistoryEntry): string {
+  const title =
+    entry.result.jobTitle.trim() ||
+    entry.result.roadmap.destinationPosition.trim() ||
+    'analysis'
+  return title.toLowerCase()
+}
+
+function dedupeHistoryEntriesByRole(entries: HistoryEntry[]): HistoryEntry[] {
+  const latestByRole = new Map<string, HistoryEntry>()
+
+  for (const entry of entries) {
+    const key = historyRoleKey(entry)
+    const existing = latestByRole.get(key)
+
+    if (!existing || new Date(entry.createdAt) > new Date(existing.createdAt)) {
+      latestByRole.set(key, entry)
+    }
+  }
+
+  return [...latestByRole.values()].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  )
+}
+
+function formatPastAnalysisLabel(entry: HistoryEntry): string {
+  return `${entry.result.jobTitle} · ${formatHistoryMonthYear(entry.createdAt)}`
 }
 
 function HistoryEmptyState({ onStartAnalysis }: { onStartAnalysis: () => void }) {
   return (
     <section
       aria-labelledby="history-empty-heading"
-      className="flex flex-col items-center rounded-2xl border border-dashed border-sky-900/35 bg-trace-surface/25 px-6 py-16 text-center"
+      className="flex flex-col items-center rounded-2xl border border-dashed border-trace-border bg-trace-surface px-6 py-16 text-center"
     >
       <History className="h-9 w-9 text-slate-600" aria-hidden />
       <h2 id="history-empty-heading" className="sr-only">
         No career roadmaps yet
       </h2>
-      <p className="mt-4 max-w-md text-sm leading-relaxed text-slate-400">
+      <p className="mt-4 max-w-md text-sm leading-relaxed text-textSecondary">
         No career roadmaps generated yet. Go to New Analysis to build your first AI transition path.
       </p>
       <button
         type="button"
         onClick={onStartAnalysis}
-        className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-sky-950/30 transition hover:from-sky-500 hover:to-cyan-500"
+        className="btn-primary mt-6 inline-flex items-center justify-center"
       >
         Go to New Analysis
       </button>
@@ -336,7 +365,7 @@ function PastAnalysisSelector({
     <div className="w-full sm:ml-auto sm:w-auto sm:min-w-[220px] sm:max-w-xs">
       <label
         htmlFor="past-analysis-role"
-        className="mb-1.5 block text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:text-right"
+        className="mb-1.5 block text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-textSecondary sm:text-right"
       >
         Past analysis
       </label>
@@ -344,14 +373,81 @@ function PastAnalysisSelector({
         id="past-analysis-role"
         value={activeEntryId}
         onChange={(event) => onSelectEntry(event.target.value)}
-        className="w-full rounded-xl border border-sky-900/40 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-100 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/25"
+        className="w-full rounded-xl border border-trace-border bg-surface border border-trace-border px-4 py-2.5 text-sm font-medium text-textPrimary outline-none transition focus:border-accent focus:ring-2 focus:ring-highlight/25"
       >
         {entries.map((entry) => (
           <option key={entry.id} value={entry.id}>
-            {entry.result.jobTitle} · {formatHistoryTimestamp(entry.createdAt)}
+            {formatPastAnalysisLabel(entry)}
           </option>
         ))}
       </select>
+    </div>
+  )
+}
+
+function JourneyScopeLegend() {
+  return (
+    <aside aria-labelledby="journey-scope-heading" className="horizon-card p-6">
+      <h4
+        id="journey-scope-heading"
+        className="text-[10px] font-semibold uppercase tracking-[0.14em] text-textSecondary"
+      >
+        Your journey at a glance
+      </h4>
+      <dl className="mt-4 space-y-4 text-xs leading-relaxed">
+        <div>
+          <dt className="font-semibold text-accent">{MACRO_PROGRESS_SECTION_LABEL}</dt>
+          <dd className="mt-1 text-textSecondary">
+            Full transition blueprint — estimated months and four sequential capability milestones.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-accent">{MICRO_SPRINT_WORKSPACE_LABEL}</dt>
+          <dd className="mt-1 text-textSecondary">
+            Your immediate 30-day window for sprint tasks and leverage actions inside the active
+            milestone.
+          </dd>
+        </div>
+      </dl>
+    </aside>
+  )
+}
+
+function MacroBlueprintDurationBar({ roadmap }: { roadmap: CareerRoadmap }) {
+  const totalMonths = roadmap.estimatedJourneyMonths
+  const activeMonth = 1
+  const progress = Math.min(100, Math.round((activeMonth / totalMonths) * 100))
+
+  return (
+    <div
+      role="status"
+      aria-label={`${formatBlueprintDurationLabel(totalMonths)}. Month ${activeMonth} of ${totalMonths}.`}
+      className="horizon-card px-6 py-4"
+    >
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <p className="min-w-0 text-sm font-semibold text-textPrimary">
+          {formatBlueprintDurationLabel(totalMonths)}
+        </p>
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:max-w-xs">
+          <div
+            className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-borderMuted"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Blueprint progress: month ${activeMonth} of ${totalMonths}`}
+          >
+            <div
+              className="h-full rounded-full bg-accent transition-all duration-200"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="shrink-0 text-[11px] tabular-nums text-textSecondary">
+            Month <span className="font-semibold text-textPrimary">{activeMonth}</span> of{' '}
+            <span className="font-semibold text-textPrimary">{totalMonths}</span>
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -360,24 +456,19 @@ function TargetRoleSummaryBar({ result }: { result: ScanResult }) {
   const score = result.score
   const riskLabel = scoreExposureLabel(score)
   const scoreColor = scoreGaugeColor(score)
-  const riskBadgeClass =
-    riskLabel === 'Vulnerable'
-      ? 'border-red-500/40 bg-red-950/30 text-red-300'
-      : riskLabel === 'At Risk'
-        ? 'border-amber-500/40 bg-amber-950/30 text-amber-300'
-        : 'border-emerald-500/40 bg-emerald-950/30 text-emerald-300'
+  const riskBadgeClass = exposureRiskBadgeClass(riskLabel)
 
   return (
-    <aside className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-4">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-400/80">
+    <aside className="horizon-card p-6">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-textSecondary">
         Target role summary
       </p>
-      <p className="mt-1 text-sm font-semibold leading-snug text-slate-50">
+      <p className="mt-2 text-sm font-semibold leading-snug text-textPrimary">
         {result.roadmap.destinationPosition}
       </p>
-      <div className="mt-4 flex items-center justify-between gap-3 border-t border-sky-900/30 pt-4">
+      <div className="mt-5 flex items-center justify-between gap-3 border-t border-borderMuted pt-5">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-textSecondary">
             Exposure score
           </p>
           <p className="mt-0.5 text-xl font-bold tabular-nums" style={{ color: scoreColor }}>
@@ -390,7 +481,7 @@ function TargetRoleSummaryBar({ result }: { result: ScanResult }) {
           {riskLabel}
         </span>
       </div>
-      <p className="mt-4 text-xs leading-relaxed text-slate-400">{result.summary}</p>
+      <p className="mt-4 text-xs leading-relaxed text-textSecondary">{result.summary}</p>
     </aside>
   )
 }
@@ -402,6 +493,8 @@ function HistoryTabPanel({
   isPremium,
   userId,
   onRunAnotherScan,
+  onPremiumStatusChange,
+  premiumRefreshToken,
 }: {
   entries: HistoryEntry[]
   selectedEntryId: string | null
@@ -409,6 +502,8 @@ function HistoryTabPanel({
   isPremium: boolean
   userId: string | null
   onRunAnotherScan: () => void
+  onPremiumStatusChange: (isPremium: boolean) => void
+  premiumRefreshToken: number
 }) {
   if (entries.length === 0) {
     return <HistoryEmptyState onStartAnalysis={onStartAnalysis} />
@@ -429,6 +524,8 @@ function HistoryTabPanel({
           isPremium={isPremium}
           userId={userId}
           onRunAnotherScan={onRunAnotherScan}
+          onPremiumStatusChange={onPremiumStatusChange}
+          premiumRefreshToken={premiumRefreshToken}
         />
       ) : null}
     </section>
@@ -440,24 +537,18 @@ function RoleTransitionStatusBar({ roadmap }: { roadmap: CareerRoadmap }) {
     <div
       role="group"
       aria-label={`Career transition from ${roadmap.currentPosition} to ${roadmap.destinationPosition}`}
-      className="relative overflow-hidden rounded-xl border border-sky-500/25 bg-gradient-to-r from-sky-950/35 via-slate-950/90 to-sky-950/35 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(56,189,248,0.08)]"
+      className="horizon-card px-6 py-4"
     >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/40 to-transparent"
-        aria-hidden
-      />
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
-        <p className="min-w-0 truncate text-sm font-semibold text-slate-100 sm:flex-1 sm:text-right">
+        <p className="min-w-0 truncate text-sm font-semibold text-textPrimary sm:flex-1 sm:text-right">
           {roadmap.currentPosition}
         </p>
 
         <div className="flex shrink-0 items-center justify-center gap-1" aria-hidden>
-          <div className="hidden h-px w-5 bg-gradient-to-r from-slate-600 to-sky-500 sm:block" />
-          <ChevronRight className="h-4 w-4 text-sky-400" strokeWidth={2.5} />
-          <div className="hidden h-px w-5 bg-gradient-to-r from-sky-500 to-sky-400 sm:block" />
+          <ChevronRight className="h-4 w-4 text-accent" strokeWidth={2.5} />
         </div>
 
-        <p className="min-w-0 truncate text-sm font-semibold text-sky-100 sm:flex-1">
+        <p className="min-w-0 truncate text-sm font-semibold text-textPrimary sm:flex-1">
           {roadmap.destinationPosition}
         </p>
       </div>
@@ -465,58 +556,24 @@ function RoleTransitionStatusBar({ roadmap }: { roadmap: CareerRoadmap }) {
   )
 }
 
-function NextUpStatusBar({ roadmap }: { roadmap: CareerRoadmap }) {
-  const skillSprint = roadmap.immediate30DayTarget ?? '1-Month Skill Sprint'
-  const runwayMonths = roadmap.estimatedJourneyMonths
-  const activeMonth = 1
-  const runwayProgress = Math.min(100, Math.round((activeMonth / runwayMonths) * 100))
+function SidebarPremiumUpgrade({
+  isPremium,
+  onPremiumStatusChange,
+  premiumRefreshToken,
+}: {
+  isPremium: boolean
+  onPremiumStatusChange: (isPremium: boolean) => void
+  premiumRefreshToken: number
+}) {
+  if (isPremium) return null
 
-  return (
-    <div
-      role="status"
-      aria-label={`Next up: ${skillSprint}. Career runway: ${runwayMonths} months.`}
-      className="relative overflow-hidden rounded-xl border border-cyan-500/25 bg-gradient-to-r from-cyan-950/35 via-slate-950/90 to-sky-950/35 px-4 py-3 shadow-[inset_0_1px_0_0_rgba(34,211,238,0.08)]"
-    >
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent"
-        aria-hidden
-      />
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span className="shrink-0 rounded-md border border-cyan-500/30 bg-cyan-950/60 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">
-            Next up
-          </span>
-          <PersonStanding className="h-4 w-4 shrink-0 text-cyan-300" aria-hidden />
-          <p className="truncate text-sm font-semibold text-slate-100">{skillSprint}</p>
-        </div>
-
-        <div className="flex min-w-0 items-center gap-3 sm:w-[min(100%,16rem)] sm:shrink-0">
-          <div
-            className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-800/90"
-            role="progressbar"
-            aria-valuenow={runwayProgress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label={`Career runway progress: month ${activeMonth} of ${runwayMonths}`}
-          >
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-sky-400 transition-all duration-500"
-              style={{ width: `${runwayProgress}%` }}
-            />
-          </div>
-          <p className="shrink-0 text-[11px] tabular-nums text-slate-400">
-            <span className="font-semibold text-slate-200">{runwayMonths}</span> mo runway
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function SidebarPremiumUpgrade() {
   return (
     <div>
-      <PremiumUpgradeButton />
+      <PremiumUpgradeButton
+        isPremium={isPremium}
+        onPremiumStatusChange={onPremiumStatusChange}
+        refreshToken={premiumRefreshToken}
+      />
       <p className="mt-2 text-center text-[11px] text-slate-500">$29/month · Cancel anytime</p>
     </div>
   )
@@ -527,43 +584,51 @@ function AnalysisResultsLayout({
   isPremium,
   userId,
   onRunAnotherScan,
+  onPremiumStatusChange,
+  premiumRefreshToken,
 }: {
   result: ScanResult
   isPremium: boolean
   userId: string | null
   onRunAnotherScan: () => void
+  onPremiumStatusChange: (isPremium: boolean) => void
+  premiumRefreshToken: number
 }) {
   return (
     <section className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
       <div className="flex min-w-0 flex-col gap-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">
+          {MACRO_PROGRESS_SECTION_LABEL}
+        </p>
         <RoleTransitionStatusBar roadmap={result.roadmap} />
-        <NextUpStatusBar roadmap={result.roadmap} />
+        <MacroBlueprintDurationBar roadmap={result.roadmap} />
         <AnalysisResultCard
           roadmap={result.roadmap}
           isPremium={isPremium}
           userId={userId}
+          onPremiumStatusChange={onPremiumStatusChange}
+          premiumRefreshToken={premiumRefreshToken}
         />
-        {isPremium ? (
-          <div className="rounded-2xl border border-sky-900/40 bg-trace-surface/50 p-5">
-            <h3 className="text-sm font-semibold text-slate-100">Your 30-day pathway actions</h3>
-            <div className="mt-4">
-              <PathwayActionChecklist isPremium={isPremium} />
-            </div>
-          </div>
-        ) : null}
       </div>
 
       <div className="flex flex-col gap-4">
+        <JourneyScopeLegend />
         <TargetRoleSummaryBar result={result} />
         <button
           type="button"
           onClick={onRunAnotherScan}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-800/50 bg-trace-surface/40 py-3 text-sm font-medium text-slate-300 transition hover:bg-trace-raised"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-trace-border bg-trace-surface py-3 text-sm font-medium text-textSecondary transition hover:bg-trace-raised"
         >
           <RefreshCw className="h-4 w-4" aria-hidden />
           Run Another Scan
         </button>
-        {!isPremium ? <SidebarPremiumUpgrade /> : null}
+        {!isPremium ? (
+          <SidebarPremiumUpgrade
+            isPremium={isPremium}
+            onPremiumStatusChange={onPremiumStatusChange}
+            premiumRefreshToken={premiumRefreshToken}
+          />
+        ) : null}
         {!isPremium ? <TemporaryScanNotice /> : null}
         <MethodologyDataTransparencyCard />
       </div>
@@ -572,41 +637,10 @@ function AnalysisResultsLayout({
 }
 
 const FIELD_INPUT_CLASS =
-  'w-full rounded-lg border border-sky-900/40 bg-slate-900 p-3 text-sm text-slate-100 caret-sky-400 placeholder:text-slate-500 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-400/30 disabled:cursor-not-allowed disabled:opacity-60'
+  'trace-input w-full p-3 text-sm caret-accent transition disabled:cursor-not-allowed disabled:opacity-60'
 
 const FIELD_INPUT_READONLY_CLASS =
-  'w-full rounded-lg border border-sky-900/40 bg-slate-950 p-3 pr-10 text-sm text-slate-400 outline-none disabled:cursor-not-allowed'
-
-function PathwayActionChecklist({ isPremium }: { isPremium: boolean }) {
-  return (
-    <ul className="space-y-3">
-      {PREMIUM_PLACEHOLDER_LINES.map((line, index) => {
-        const completed = isPremium && index < 2
-
-        return (
-          <li
-            key={line}
-            className="flex items-start gap-3 rounded-lg border border-sky-900/30 bg-trace-surface/40 px-3 py-2.5"
-          >
-            <span
-              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                completed
-                  ? 'border-emerald-500 bg-emerald-500 text-white'
-                  : 'border-sky-800/50 bg-trace-surface/60 text-transparent'
-              }`}
-              aria-hidden
-            >
-              <Check className="h-3 w-3" />
-            </span>
-            <span className={`text-sm leading-relaxed ${completed ? 'text-slate-500 line-through' : 'text-slate-300'}`}>
-              {line}
-            </span>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
+  'trace-input w-full p-3 pr-10 text-sm text-textSecondary outline-none disabled:cursor-not-allowed'
 
 type ShieldViewProps = {
   userId: string | null
@@ -615,6 +649,8 @@ type ShieldViewProps = {
   isPremium: boolean
   recentScans: ScanRow[]
   onScanComplete: () => void
+  onPremiumStatusChange: (isPremium: boolean) => void
+  premiumRefreshToken: number
 }
 
 function ShieldView({
@@ -624,10 +660,12 @@ function ShieldView({
   isPremium,
   recentScans,
   onScanComplete,
+  onPremiumStatusChange,
+  premiumRefreshToken,
 }: ShieldViewProps) {
   const [phase, setPhase] = useState<ShieldPhase>('form')
   const [resumeText, setResumeText] = useState('')
-  const [currentJobTitle, setCurrentJobTitle] = useState(jobRole)
+  const [currentJobTitle, setCurrentJobTitle] = useState(() => formatJobTitle(jobRole))
   const [targetJobTitle, setTargetJobTitle] = useState('')
   const [loadingCaptionIndex, setLoadingCaptionIndex] = useState(0)
   const [roadmapData, setRoadmapData] = useState<CareerRoadmap | null>(null)
@@ -641,6 +679,7 @@ function ShieldView({
   const [shieldTab, setShieldTab] = useState<ShieldTab>('analysis')
   const [lastScanDate, setLastScanDate] = useState<string | null>(null)
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null)
+  const [scanBalanceRefreshToken, setScanBalanceRefreshToken] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const currentSessionResult: ScanResult | null = roadmapData
@@ -671,8 +710,10 @@ function ShieldView({
       })
     }
 
-    return entries.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return dedupeHistoryEntriesByRole(
+      entries.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
     )
   }, [currentSessionResult, lastScanDate, recentScans, jobRole])
 
@@ -700,7 +741,7 @@ function ShieldView({
   }, [shieldTab, historyEntries, selectedHistoryEntryId])
 
   useEffect(() => {
-    setCurrentJobTitle((prev) => (prev.trim() ? prev : jobRole))
+    setCurrentJobTitle((prev) => (prev.trim() ? prev : formatJobTitle(jobRole)))
   }, [jobRole])
 
   useEffect(() => {
@@ -718,8 +759,8 @@ function ShieldView({
     setFormError(null)
 
     const trimmedResume = resumeText.trim()
-    const trimmedCurrent = currentJobTitle.trim()
-    const trimmedTitle = targetJobTitle.trim()
+    const trimmedCurrent = formatJobTitle(currentJobTitle)
+    const trimmedTitle = formatJobTitle(targetJobTitle)
     const hasFile = uploadedFile !== null
     const hasText = trimmedResume.length >= 40
 
@@ -737,6 +778,9 @@ function ShieldView({
       setFormError('Enter your target job title.')
       return
     }
+
+    setCurrentJobTitle(trimmedCurrent)
+    setTargetJobTitle(trimmedTitle)
 
     setPhase('loading')
     setLoadingCaptionIndex(0)
@@ -787,9 +831,8 @@ function ShieldView({
       setLastScanDate(new Date().toISOString())
       setSelectedHistoryEntryId(null)
       setPhase('results')
-      if (payload.isPremium) {
-        onScanComplete()
-      }
+      onScanComplete()
+      setScanBalanceRefreshToken((token) => token + 1)
     } catch {
       setPhase('form')
       setFormError('Network error. Check your connection and try again.')
@@ -840,32 +883,47 @@ function ShieldView({
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <div className="flex items-center gap-2.5">
-          <Shield className="h-6 w-6 shrink-0 text-sky-400" aria-hidden />
-          <h1 className="text-xl font-bold text-slate-50 md:text-2xl">AI Career Shield</h1>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <Shield className="h-6 w-6 shrink-0 text-accent" aria-hidden />
+              <h1 className="text-xl font-bold text-textPrimary md:text-2xl">AI Career Shield</h1>
+            </div>
+            <p className="mt-1.5 text-sm text-textSecondary">
+              Analyze your AI exposure risk and career resilience.
+            </p>
+            {isPremium ? (
+              <span className="horizon-badge-active mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold">
+                Pro
+              </span>
+            ) : null}
+          </div>
+
+          {isPremium ? (
+            <Link
+              href="/dashboard/roadmap"
+              className="btn-primary w-full gap-2 sm:w-auto"
+            >
+              <MapIcon className="h-4 w-4 shrink-0" aria-hidden />
+              View Your Roadmap
+              <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+            </Link>
+          ) : null}
         </div>
-        <p className="mt-1.5 text-sm text-slate-400">
-          Analyze your AI exposure risk and career resilience.
-        </p>
-        {isPremium ? (
-          <span className="mt-2 inline-block rounded-full bg-sky-500/20 px-3 py-1 text-xs font-semibold text-sky-300">
-            Pro
-          </span>
-        ) : null}
       </header>
 
-      <div className="flex flex-col gap-3 border-b border-sky-900/40 pb-0 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex gap-6">
+      <div className="flex flex-col gap-4 border-b border-borderMuted pb-0 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex gap-2">
         <button
           type="button"
           onClick={() => {
             setShieldTab('analysis')
             setSelectedHistoryEntryId(null)
           }}
-          className={`border-b-2 pb-2.5 text-sm font-medium transition ${
+          className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
             shieldTab === 'analysis'
-              ? 'border-sky-600 text-sky-300'
-              : 'border-transparent text-slate-500 hover:text-slate-200'
+              ? 'horizon-nav-active'
+              : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
           }`}
         >
           New Analysis
@@ -873,10 +931,10 @@ function ShieldView({
         <button
           type="button"
           onClick={() => setShieldTab('history')}
-          className={`border-b-2 pb-2.5 text-sm font-medium transition ${
+          className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
             shieldTab === 'history'
-              ? 'border-sky-600 text-sky-300'
-              : 'border-transparent text-slate-500 hover:text-slate-200'
+              ? 'horizon-nav-active'
+              : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
           }`}
         >
           History
@@ -901,6 +959,8 @@ function ShieldView({
           isPremium={isPremium}
           userId={userId}
           onRunAnotherScan={startNewAnalysis}
+          onPremiumStatusChange={onPremiumStatusChange}
+          premiumRefreshToken={premiumRefreshToken}
         />
       ) : null}
 
@@ -936,23 +996,24 @@ function ShieldView({
           onOpenFilePicker={() => fileInputRef.current?.click()}
           onClearFile={clearUploadedFile}
           onSubmit={handleAnalyze}
+          scanBalanceRefreshToken={scanBalanceRefreshToken}
         />
       ) : null}
 
       {shieldTab === 'analysis' && phase === 'loading' ? (
         <section
-          className="flex flex-col items-center rounded-2xl border border-sky-900/40 bg-trace-surface/70 px-6 py-14 text-center ring-1 ring-sky-900/40/50"
+          className="flex flex-col items-center rounded-2xl border border-trace-border bg-trace-surface px-6 py-14 text-center ring-1 ring-sky-900/40/50"
           aria-live="polite"
           aria-busy="true"
         >
           <div className="relative h-20 w-20">
-            <div className="absolute inset-0 animate-spin rounded-full border-4 border-sky-900/40 border-t-sky-300" />
+            <div className="absolute inset-0 animate-spin rounded-full border-4 border-trace-border border-t-sky-300" />
             <div className="absolute inset-2 animate-spin rounded-full border-4 border-transparent border-b-sky-200/60 [animation-direction:reverse] [animation-duration:1.4s]" />
           </div>
-          <p className="mt-8 text-sm font-medium text-slate-200">Analyzing your profile</p>
+          <p className="mt-8 text-sm font-medium text-textPrimary">Analyzing your profile</p>
           <p
             key={loadingCaptionIndex}
-            className="mt-2 max-w-xs animate-pulse text-xs text-slate-400"
+            className="mt-2 max-w-xs animate-pulse text-xs text-textSecondary"
           >
             {LOADING_CAPTIONS[loadingCaptionIndex]}
           </p>
@@ -965,6 +1026,8 @@ function ShieldView({
           isPremium={isPremium}
           userId={userId}
           onRunAnotherScan={startNewAnalysis}
+          onPremiumStatusChange={onPremiumStatusChange}
+          premiumRefreshToken={premiumRefreshToken}
         />
       ) : null}
       </div>
@@ -986,6 +1049,8 @@ type ProfileViewProps = {
   onFullNameChange: (value: string) => void
   onCurrentRoleChange: (value: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onPremiumStatusChange: (isPremium: boolean) => void
+  premiumRefreshToken: number
 }
 
 function formatMemberSince(iso: string | null): string {
@@ -1024,7 +1089,7 @@ function PreferenceToggle({
       aria-label={label}
       onClick={onToggle}
       className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-        enabled ? 'bg-sky-500' : 'bg-slate-700'
+        enabled ? 'bg-accent' : 'bg-slate-700'
       }`}
     >
       <span
@@ -1063,6 +1128,8 @@ function ProfileView({
   onFullNameChange,
   onCurrentRoleChange,
   onSubmit,
+  onPremiumStatusChange,
+  premiumRefreshToken,
 }: ProfileViewProps) {
   const router = useRouter()
   const [exportLoading, setExportLoading] = useState(false)
@@ -1167,14 +1234,14 @@ function ProfileView({
   return (
     <div className="flex flex-col gap-6">
       <header>
-        <h1 className="text-xl font-bold text-slate-50 md:text-2xl">Profile Settings</h1>
-        <p className="mt-1 text-sm text-slate-400">Manage your account settings and preferences</p>
+        <h1 className="text-xl font-bold text-textPrimary md:text-2xl">Profile Settings</h1>
+        <p className="mt-1 text-sm text-textSecondary">Manage your account settings and preferences</p>
       </header>
 
       {success ? (
         <div
           role="status"
-          className="rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200"
+          className="rounded-lg border border-accent/30 bg-accentMuted px-4 py-3 text-sm text-accent"
         >
           Profile updated successfully.
         </div>
@@ -1183,7 +1250,7 @@ function ProfileView({
       {complianceError ? (
         <div
           role="alert"
-          className="rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300"
+          className="rounded-lg border border-red-500/30 bg-red-50 px-4 py-3 text-sm text-red-800"
         >
           {complianceError}
         </div>
@@ -1192,61 +1259,66 @@ function ProfileView({
       {complianceSuccess ? (
         <div
           role="status"
-          className="rounded-lg border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-200"
+          className="rounded-lg border border-accent/30 bg-accentMuted px-4 py-3 text-sm text-accent"
         >
           {complianceSuccess}
         </div>
       ) : null}
 
       <div className="flex flex-col gap-6 md:grid md:grid-cols-3 md:gap-8">
-      <aside className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-5 md:col-span-1">
+      <aside className="rounded-xl border border-trace-border bg-trace-surface p-5 md:col-span-1">
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-700 shadow-lg shadow-sky-950/40">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-700 shadow-lg shadow-orange-900/40">
             <span className="text-xl font-bold text-white">
               {profileAvatarInitials(fullName, email)}
             </span>
           </div>
-          <h2 className="mt-4 text-lg font-semibold text-slate-100">{displayName}</h2>
-          <p className="mt-0.5 text-sm text-slate-500">{email}</p>
-          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-sky-800/50 bg-sky-950/60 px-3 py-1 text-xs font-medium text-sky-200">
-            <Shield className="h-3.5 w-3.5 text-sky-400" aria-hidden />
+          <h2 className="mt-4 text-lg font-semibold text-textPrimary">{displayName}</h2>
+          <p className="mt-0.5 text-sm text-textSecondary">{email}</p>
+          <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-trace-border bg-accentMuted px-3 py-1 text-xs font-medium text-accent">
+            <Shield className="h-3.5 w-3.5 text-accent" aria-hidden />
             {isPremium ? 'Premium Account' : 'Free Account'}
           </span>
         </div>
 
-        <dl className="mt-5 space-y-2.5 border-t border-sky-900/30 pt-4 text-sm">
+        <dl className="mt-5 space-y-2.5 border-t border-trace-border pt-4 text-sm">
           <div className="flex justify-between gap-3">
-            <dt className="text-slate-500">Scans this month</dt>
-            <dd className="font-medium text-slate-100">{scansThisMonth}</dd>
+            <dt className="text-textSecondary">Scans this month</dt>
+            <dd className="font-medium text-textPrimary">{scansThisMonth}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-slate-500">Member since</dt>
-            <dd className="font-medium text-slate-100">{formatMemberSince(memberSince)}</dd>
+            <dt className="text-textSecondary">Member since</dt>
+            <dd className="font-medium text-textPrimary">{formatMemberSince(memberSince)}</dd>
           </div>
           <div className="flex justify-between gap-3">
-            <dt className="text-slate-500">Last scan</dt>
-            <dd className="font-medium text-slate-100">{formatLastScan(lastScanAt)}</dd>
+            <dt className="text-textSecondary">Last scan</dt>
+            <dd className="font-medium text-textPrimary">{formatLastScan(lastScanAt)}</dd>
           </div>
         </dl>
 
         {!isPremium ? (
-          <PremiumUpgradeButton className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 py-3 text-sm font-semibold text-white transition hover:from-sky-400 hover:to-blue-500 disabled:cursor-not-allowed disabled:opacity-70" />
+          <PremiumUpgradeButton
+            className="btn-primary mt-5 flex w-full items-center justify-center gap-2"
+            isPremium={isPremium}
+            onPremiumStatusChange={onPremiumStatusChange}
+            refreshToken={premiumRefreshToken}
+          />
         ) : null}
       </aside>
 
       <div className="flex flex-col gap-6 md:col-span-2">
-      <section className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-5">
+      <section className="rounded-xl border border-trace-border bg-trace-surface p-5">
         <div className="mb-4 flex items-start gap-3">
-          <User className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" aria-hidden />
+          <User className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Personal Information</h2>
-            <p className="mt-0.5 text-xs text-slate-500">Update your personal details</p>
+            <h2 className="text-sm font-semibold text-textPrimary">Personal Information</h2>
+            <p className="mt-0.5 text-xs text-textSecondary">Update your personal details</p>
           </div>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-slate-400">
+            <label htmlFor="fullName" className="mb-1.5 block text-xs font-medium text-textPrimary">
               Full Name
             </label>
             <input
@@ -1263,7 +1335,7 @@ function ProfileView({
           </div>
 
           <div>
-            <label htmlFor="profileEmail" className="mb-1.5 block text-xs font-medium text-slate-400">
+            <label htmlFor="profileEmail" className="mb-1.5 block text-xs font-medium text-textPrimary">
               Email Address
             </label>
             <div className="relative">
@@ -1281,7 +1353,7 @@ function ProfileView({
           </div>
 
           <div>
-            <label htmlFor="currentRole" className="mb-1.5 block text-xs font-medium text-slate-400">
+            <label htmlFor="currentRole" className="mb-1.5 block text-xs font-medium text-textPrimary">
               Current Role
             </label>
             <input
@@ -1300,7 +1372,7 @@ function ProfileView({
           <button
             type="submit"
             disabled={saving || !userId}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-sky-600 py-3 text-sm font-semibold text-white transition hover:from-cyan-500 hover:to-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary flex w-full items-center justify-center gap-2"
           >
             {saving ? (
               <>
@@ -1314,11 +1386,11 @@ function ProfileView({
         </form>
       </section>
 
-      <section className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-5">
+      <section className="rounded-xl border border-trace-border bg-trace-surface p-5">
         <div className="mb-4 flex items-start gap-3">
-          <Settings className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" aria-hidden />
+          <Settings className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Preferences</h2>
+            <h2 className="text-sm font-semibold text-textPrimary">Preferences</h2>
             <p className="mt-0.5 text-xs text-slate-500">Customize your experience</p>
           </div>
         </div>
@@ -1328,7 +1400,7 @@ function ProfileView({
             <div className="flex min-w-0 items-start gap-3">
               <Bell className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
               <div>
-                <p className="text-sm font-medium text-slate-200">Email Notifications</p>
+                <p className="text-sm font-medium text-textPrimary">Email Notifications</p>
                 <p className="text-xs text-slate-500">Receive updates about your scans</p>
               </div>
             </div>
@@ -1343,7 +1415,7 @@ function ProfileView({
             <div className="flex min-w-0 items-start gap-3">
               <Mail className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
               <div>
-                <p className="text-sm font-medium text-slate-200">Weekly Reports</p>
+                <p className="text-sm font-medium text-textPrimary">Weekly Reports</p>
                 <p className="text-xs text-slate-500">Get weekly career insights</p>
               </div>
             </div>
@@ -1356,11 +1428,11 @@ function ProfileView({
         </div>
       </section>
 
-      <section className="rounded-xl border border-sky-900/40 bg-trace-surface/50 p-5">
+      <section className="rounded-xl border border-trace-border bg-trace-surface p-5">
         <div className="mb-3 flex items-start gap-3">
-          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-sky-400" aria-hidden />
+          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden />
           <div>
-            <h2 id="compliance-heading" className="text-sm font-semibold text-slate-100">
+            <h2 id="compliance-heading" className="text-sm font-semibold text-textPrimary">
               Data Privacy &amp; Portability
             </h2>
             <p className="mt-0.5 text-xs text-slate-500">GDPR / CCPA Compliant</p>
@@ -1377,11 +1449,11 @@ function ProfileView({
             type="button"
             onClick={handleExportPii}
             disabled={exportLoading || !userId}
-            className="flex w-full items-center gap-3 rounded-lg border border-sky-900/40 bg-trace-surface/30 px-3 py-3 text-left transition hover:border-sky-800/50 hover:bg-sky-950/60 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-lg border border-trace-border bg-trace-surface px-3 py-3 text-left transition hover:border-trace-border hover:bg-accentMuted disabled:cursor-not-allowed disabled:opacity-60"
           >
-            <Download className="h-4 w-4 shrink-0 text-sky-400" aria-hidden />
+            <Download className="h-4 w-4 shrink-0 text-accent" aria-hidden />
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-slate-200">Export My Data</span>
+              <span className="block text-sm font-medium text-textPrimary">Export My Data</span>
               <span className="block text-xs text-slate-500">Download all your PII records</span>
             </span>
             <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden />
@@ -1391,7 +1463,7 @@ function ProfileView({
             type="button"
             onClick={handlePermanentDeletion}
             disabled={deleteLoading || !userId}
-            className="flex w-full items-center gap-3 rounded-lg border border-red-900/40 bg-red-950/20 px-3 py-3 text-left transition hover:border-red-800/50 hover:bg-red-950/30 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center gap-3 rounded-lg border border-red-900/40 bg-red-50 px-3 py-3 text-left transition hover:border-red-800/50 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <Trash2 className="h-4 w-4 shrink-0 text-red-400" aria-hidden />
             <span className="min-w-0 flex-1">
@@ -1405,7 +1477,7 @@ function ProfileView({
       </div>
       </div>
 
-      <div className="border-t border-sky-900/40 pt-4">
+      <div className="border-t border-trace-border pt-4">
         <SignOutButton />
       </div>
     </div>
@@ -1419,6 +1491,8 @@ export default function DashboardPage() {
   const [fullName, setFullName] = useState('')
   const [currentRole, setCurrentRole] = useState('')
   const [isPremium, setIsPremium] = useState(false)
+  const [premiumRefreshToken, setPremiumRefreshToken] = useState(0)
+  const [premiumWelcome, setPremiumWelcome] = useState(false)
   const [recentScans, setRecentScans] = useState<ScanRow[]>([])
   const [scansThisMonth, setScansThisMonth] = useState(0)
   const [memberSince, setMemberSince] = useState<string | null>(null)
@@ -1427,6 +1501,63 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+
+  const handlePremiumStatusChange = useCallback((premium: boolean) => {
+    setIsPremium(premium)
+  }, [])
+
+  const refreshPremiumStatus = useCallback(async () => {
+    const supabase = createClient()
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+
+    if (userError || !user) return false
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('is_premium')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileError) {
+      console.error('[Dashboard] Failed to refresh premium status:', profileError.message)
+      return false
+    }
+
+    const premium = profile?.is_premium ?? false
+    setIsPremium(premium)
+    return premium
+  }, [])
+
+  const confirmPremiumCheckout = useCallback(async (sessionId: string) => {
+    try {
+      const response = await fetch('/api/checkout/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+
+      const payload = (await response.json()) as { isPremium?: boolean; error?: string }
+
+      if (!response.ok) {
+        console.error('[Dashboard] Checkout confirm failed:', payload.error)
+        return false
+      }
+
+      if (payload.isPremium) {
+        setIsPremium(true)
+        setPremiumWelcome(true)
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error('[Dashboard] Checkout confirm failed:', error)
+      return false
+    }
+  }, [])
 
   const refreshScans = useCallback(async () => {
     if (!userId) return
@@ -1464,6 +1595,42 @@ export default function DashboardPage() {
   }, [userId])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const params = new URLSearchParams(window.location.search)
+    const checkoutSuccess =
+      params.get('success') === 'true' || params.get('checkout') === 'success'
+    const sessionId = params.get('session_id')
+
+    if (!checkoutSuccess) return
+
+    async function handleCheckoutReturn() {
+      if (sessionId) {
+        await confirmPremiumCheckout(sessionId)
+      }
+      const premium = await refreshPremiumStatus()
+      if (premium) {
+        setPremiumWelcome(true)
+      }
+      setPremiumRefreshToken((token) => token + 1)
+    }
+
+    void handleCheckoutReturn()
+
+    const retryTimers = [2000, 5000, 10000].map((delay) =>
+      window.setTimeout(() => {
+        void handleCheckoutReturn()
+      }, delay)
+    )
+
+    window.history.replaceState({}, '', '/dashboard')
+
+    return () => {
+      retryTimers.forEach((timer) => window.clearTimeout(timer))
+    }
+  }, [confirmPremiumCheckout, refreshPremiumStatus])
+
+  useEffect(() => {
     let cancelled = false
 
     async function loadDashboard() {
@@ -1488,6 +1655,20 @@ export default function DashboardPage() {
       setEmail(user.email ?? '')
       setMemberSince(user.created_at ?? null)
 
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search)
+        const sessionId = params.get('session_id')
+        const checkoutSuccess =
+          params.get('success') === 'true' || params.get('checkout') === 'success'
+
+        if (checkoutSuccess && sessionId) {
+          const activated = await confirmPremiumCheckout(sessionId)
+          if (activated) {
+            setPremiumWelcome(true)
+          }
+        }
+      }
+
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('email, full_name, job_role, is_premium')
@@ -1507,6 +1688,24 @@ export default function DashboardPage() {
         setFullName(profile.full_name ?? '')
         setCurrentRole(profile.job_role ?? '')
         setIsPremium(profile.is_premium ?? false)
+
+        if (!profile.is_premium) {
+          try {
+            const syncResponse = await fetch('/api/checkout/sync', { method: 'POST' })
+            const syncPayload = (await syncResponse.json()) as {
+              isPremium?: boolean
+              synced?: boolean
+            }
+            if (syncResponse.ok && syncPayload.isPremium) {
+              setIsPremium(true)
+              if (syncPayload.synced) {
+                setPremiumWelcome(true)
+              }
+            }
+          } catch (syncError) {
+            console.error('[Dashboard] Premium sync failed:', syncError)
+          }
+        }
       }
 
       const startOfMonth = new Date()
@@ -1552,7 +1751,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [confirmPremiumCheckout])
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -1583,7 +1782,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative -mx-4 -my-8 min-h-screen bg-black text-slate-300 sm:-mx-6 md:-mx-8 md:-my-12">
+    <div className="relative -mx-4 -my-8 min-h-screen text-textSecondary sm:-mx-6 md:-mx-8 md:-my-12">
       <DashboardNav view={view} onViewChange={setView} />
 
       <div className="w-full min-h-screen p-4 md:p-8">
@@ -1591,9 +1790,31 @@ export default function DashboardPage() {
           {error ? (
             <div
               role="alert"
-              className="rounded-lg border border-red-500/30 bg-red-950/40 px-4 py-3 text-sm text-red-300"
+              className="alert-anomaly text-sm"
             >
               {error}
+            </div>
+          ) : null}
+
+          {premiumWelcome && isPremium ? (
+            <div
+              role="status"
+              className="flex flex-col gap-3 rounded-xl border border-accent/30 bg-accentMuted px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div>
+                <p className="text-sm font-semibold text-accent">Premium activated</p>
+                <p className="mt-1 text-sm text-textSecondary">
+                  Your full transition plan is unlocked. Open your interactive roadmap or review saved
+                  analyses in History.
+                </p>
+              </div>
+              <Link
+                href="/dashboard/roadmap"
+                className="btn-primary inline-flex shrink-0 items-center justify-center gap-2"
+              >
+                <MapIcon className="h-4 w-4" aria-hidden />
+                View Your Roadmap
+              </Link>
             </div>
           ) : null}
 
@@ -1607,6 +1828,8 @@ export default function DashboardPage() {
               isPremium={isPremium}
               recentScans={recentScans}
               onScanComplete={refreshScans}
+              onPremiumStatusChange={handlePremiumStatusChange}
+              premiumRefreshToken={premiumRefreshToken}
             />
           ) : (
             <ProfileView
@@ -1623,6 +1846,8 @@ export default function DashboardPage() {
               onFullNameChange={setFullName}
               onCurrentRoleChange={setCurrentRole}
               onSubmit={handleSubmit}
+              onPremiumStatusChange={handlePremiumStatusChange}
+              premiumRefreshToken={premiumRefreshToken}
             />
           )}
         </div>

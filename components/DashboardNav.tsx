@@ -1,5 +1,6 @@
 'use client'
 
+import BrandLogo from '@/components/BrandLogo'
 import { BookOpen, Shield, User } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
@@ -36,16 +37,16 @@ const NAV_ITEMS: NavItem[] = [
 ]
 
 function desktopNavClass(isActive: boolean) {
-  return `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+  return `horizon-interactive flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium ${
     isActive
-      ? 'bg-sky-400/20 text-sky-300'
-      : 'text-slate-400 hover:bg-trace-surface/80 hover:text-slate-200'
+      ? 'horizon-nav-active'
+      : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
   }`
 }
 
 function mobileNavClass(isActive: boolean) {
-  return `flex flex-col items-center gap-1 px-3 text-xs font-medium transition ${
-    isActive ? 'text-sky-300' : 'text-slate-400 hover:text-slate-200'
+  return `horizon-interactive flex flex-col items-center gap-1 rounded-lg px-3 py-1 ${
+    isActive ? 'text-accent' : 'text-textSecondary hover:text-textPrimary'
   }`
 }
 
@@ -83,7 +84,7 @@ function NavViewTab({
       aria-current={isActive ? 'page' : undefined}
       className={mobileNavClass(isActive)}
     >
-      <Icon className="h-5 w-5 shrink-0" aria-hidden />
+      <Icon className={`h-5 w-5 shrink-0 ${isActive ? 'text-accent' : ''}`} aria-hidden />
       <span className="max-w-[4.75rem] text-center text-[10px] leading-tight">{tab.shortLabel}</span>
     </button>
   )
@@ -114,15 +115,16 @@ export default function DashboardNav({ view, onViewChange }: DashboardNavProps) 
     <>
       <nav
         aria-label="Dashboard navigation"
-        className="sticky top-0 z-40 hidden w-full border-b border-sky-900/40 bg-trace-surface/95 backdrop-blur md:flex md:items-center md:justify-between md:px-8 md:py-4"
+        className="sticky top-0 z-40 hidden w-full border-b border-borderMuted bg-surface/95 shadow-horizon backdrop-blur-md md:flex md:items-center md:justify-between md:px-8 md:py-4"
       >
         <Link
           href="/"
-          className="text-lg font-bold tracking-tight text-slate-100 transition hover:text-sky-300"
+          className="horizon-interactive flex items-center gap-2.5 text-lg font-bold tracking-tight text-textPrimary hover:opacity-90"
         >
-          Future Trace
+          <BrandLogo size={48} className="h-11 w-11 sm:h-12 sm:w-12" />
+          <span>Future Trace</span>
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {NAV_ITEMS.map((item) =>
             item.kind === 'link' ? (
               <NavLinkTab key={item.href} tab={item} variant="desktop" />
@@ -141,7 +143,7 @@ export default function DashboardNav({ view, onViewChange }: DashboardNavProps) 
 
       <nav
         aria-label="Dashboard navigation"
-        className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-sky-900/40 bg-trace-surface/95 py-3 backdrop-blur md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t border-borderMuted bg-surface/95 py-3 shadow-[0_-8px_32px_rgba(0,0,0,0.4)] backdrop-blur-md md:hidden"
       >
         {NAV_ITEMS.map((item) =>
           item.kind === 'link' ? (

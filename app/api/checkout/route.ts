@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       mode: 'subscription',
       client_reference_id: user.id,
       metadata: { userId: user.id },
-      success_url: `${appUrl}/dashboard?checkout=success`,
+      success_url: `${appUrl}/dashboard?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${appUrl}/dashboard?checkout=cancelled`,
       ...(user.email ? { customer_email: user.email } : {}),
       line_items: priceId
