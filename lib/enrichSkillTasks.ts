@@ -1,5 +1,6 @@
 import type { SkillTask, SkillTaskSkillType } from '@/types/careerRoadmap'
 import type { TaskResources } from '@/types/premiumRoadmapResources'
+import type { BlueprintStep, SprintResourceLink } from '@/types/sprintTask'
 
 const DURATION_BY_INDEX = ['30 min', '45 min', '1 hr', '2 hrs'] as const
 
@@ -22,15 +23,65 @@ function inferSkillType(label: string, index: number): SkillTaskSkillType {
   return SKILL_TYPE_BY_INDEX[index] ?? 'Technical'
 }
 
-function defaultActionItem(label: string): string {
-  return `Submit one verifiable artifact (document, screenshot, repo link, or demo recording) that proves you completed "${label}" and can be referenced in your sprint log or portfolio.`
+function mapSkillTypeToSprintType(skillType: SkillTaskSkillType): SkillTask['type'] {
+  switch (skillType) {
+    case 'Discovery':
+      return 'discovery'
+    case 'Metrics':
+      return 'metrics'
+    case 'Integration':
+      return 'integration'
+    default:
+      return 'technical'
+  }
+}
+
+function defaultGoal(label: string): string {
+  return `Deliver one verifiable artifact (document, screenshot, repo link, or demo recording) that proves you completed "${label}" and can be referenced in your sprint log or portfolio.`
+}
+
+function defaultBlueprintSteps(label: string, skillType: SkillTaskSkillType): BlueprintStep[] {
+  const codeLanguage = skillType === 'Integration' ? 'json' : 'bash'
+  return [
+    {
+      title: 'Step 1',
+      instruction: `Block 15 minutes to define the done state for "${label}" with one measurable output.`,
+      codeSnippet: `mkdir -p ~/future-trace/sprint-work\n# Define DONE: one file or URL you will submit as proof\necho "DONE=" >> ~/future-trace/sprint-work/notes.md`,
+      codeLanguage,
+    },
+    {
+      title: 'Step 2',
+      instruction:
+        'Execute the core implementation or research pass; capture screenshots, commits, or notes as proof.',
+      codeSnippet:
+        skillType === 'Metrics'
+          ? `cat <<'EOF' > metrics-checklist.json\n{\n  "task": "${label}",\n  "success_metric": "",\n  "baseline": "",\n  "target": ""\n}\nEOF`
+          : `git status\ngit add .\ngit commit -m "chore: progress on ${label}"`,
+      codeLanguage: skillType === 'Metrics' ? 'json' : 'bash',
+    },
+    {
+      title: 'Step 3',
+      instruction:
+        'Validate the result against your sprint milestone criteria and log blockers for your next session.',
+      codeSnippet: `echo "## Blockers" >> ~/future-trace/sprint-work/notes.md\necho "- " >> ~/future-trace/sprint-work/notes.md`,
+      codeLanguage: 'bash',
+    },
+  ]
+}
+
+function defaultCuratedResources(): SprintResourceLink[] {
+  return [
+    { label: 'Concept Guide', url: 'https://www.nngroup.com/articles/' },
+    { label: 'Official Docs', url: 'https://docs.github.com/en/get-started' },
+  ]
 }
 
 function defaultResourcesForTask(task: SkillTask, index: number, milestoneTitle: string): TaskResources {
   const label = task.label
+  const goal = defaultGoal(label)
   return {
     conceptExplanation: `Completing "${label}" builds a concrete signal that you can execute in a ${milestoneTitle.toLowerCase()} context—not just discuss it. This task closes a gap recruiters look for when validating your transition from operational work to destination-role ownership.`,
-    actionItem: task.actionItem ?? defaultActionItem(label),
+    actionItem: task.actionItem ?? goal,
     actionSteps: [
       `Step 1: Block 15 minutes to define the done state for "${label}" with one measurable output.`,
       `Step 2: Execute the core implementation or research pass, capturing screenshots, commits, or notes as proof.`,
@@ -60,28 +111,41 @@ export function enrichSkillTask(
   const skillType = task.skillType ?? inferSkillType(task.label, index)
   const estimatedDuration = task.estimatedDuration ?? DURATION_BY_INDEX[index] ?? '45 min'
   const resources = task.resources ?? defaultResourcesForTask(task, index, milestoneTitle)
-  const actionItem =
+  const goal =
+    task.goal?.trim() ||
     task.actionItem?.trim() ||
     resources.actionItem?.trim() ||
-    defaultActionItem(task.label)
+    defaultGoal(task.label)
+  const whyThisMatters = task.whyThisMatters?.trim() || resources.conceptExplanation
+  const steps =
+    task.steps && task.steps.length > 0
+      ? task.steps
+      : defaultBlueprintSteps(task.label, skillType)
+  const curatedResources =
+    task.curatedResources && task.curatedResources.length > 0
+      ? task.curatedResources
+      : defaultCuratedResources()
 
   return {
     ...task,
+    title: task.title ?? task.label,
+    type: task.type ?? mapSkillTypeToSprintType(skillType),
     skillType,
     estimatedDuration,
-    actionItem,
+    duration: task.duration ?? estimatedDuration,
+    actionItem: goal,
+    whyThisMatters,
+    goal,
+    steps,
+    curatedResources,
+    blueprintStatus: task.blueprintStatus ?? 'ready',
     resources: {
       ...resources,
-      actionItem,
+      actionItem: goal,
       actionSteps: resources.actionSteps.slice(0, 3),
       conceptReferences: resources.conceptReferences?.length
         ? resources.conceptReferences
-        : [
-            {
-              label: 'Concept Guide',
-              url: 'https://www.nngroup.com/articles/',
-            },
-          ],
+        : curatedResources.slice(0, 1).map((link) => ({ label: link.label, url: link.url })),
     },
   }
 }
@@ -122,6 +186,44 @@ function parseTaskResources(raw: unknown): TaskResources | undefined {
   }
 }
 
+function parseBlueprintSteps(raw: unknown): BlueprintStep[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const steps = raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const row = item as Record<string, unknown>
+      if (typeof row.title !== 'string' || typeof row.instruction !== 'string') return null
+      const step: BlueprintStep = {
+        title: row.title.trim(),
+        instruction: row.instruction.trim(),
+      }
+      if (typeof row.codeSnippet === 'string' && row.codeSnippet.trim()) {
+        step.codeSnippet = row.codeSnippet
+      }
+      if (typeof row.codeLanguage === 'string' && row.codeLanguage.trim()) {
+        step.codeLanguage = row.codeLanguage
+      }
+      return step
+    })
+    .filter((step): step is BlueprintStep => step !== null)
+
+  return steps.length > 0 ? steps : undefined
+}
+
+function parseCuratedResources(raw: unknown): SprintResourceLink[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  const links = raw
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const row = item as Record<string, unknown>
+      if (typeof row.label !== 'string' || typeof row.url !== 'string') return null
+      return { label: row.label.trim(), url: row.url.trim() }
+    })
+    .filter((link): link is SprintResourceLink => link !== null)
+
+  return links.length > 0 ? links : undefined
+}
+
 /** Parse a task row from stored JSON (supports legacy label-only and premium resource shape). */
 export function parseSkillTask(raw: unknown): SkillTask | null {
   if (!raw || typeof raw !== 'object') return null
@@ -136,11 +238,47 @@ export function parseSkillTask(raw: unknown): SkillTask | null {
     typeof row.skillType === 'string' ? (row.skillType as SkillTaskSkillType) : undefined
   const estimatedDuration =
     typeof row.estimatedDuration === 'string' ? row.estimatedDuration : undefined
-  const resources = parseTaskResources(row.resources)
+  const rawResources = row.resources
+  const curatedResources = Array.isArray(rawResources)
+    ? parseCuratedResources(rawResources)
+    : undefined
+  const resources = Array.isArray(rawResources) ? undefined : parseTaskResources(rawResources)
   const actionItem =
     typeof row.actionItem === 'string'
       ? row.actionItem
       : resources?.actionItem
 
-  return { id, label, skillType, estimatedDuration, actionItem, resources }
+  const title = typeof row.title === 'string' ? row.title : undefined
+  const type =
+    row.type === 'technical' ||
+    row.type === 'discovery' ||
+    row.type === 'metrics' ||
+    row.type === 'integration'
+      ? row.type
+      : undefined
+  const duration = typeof row.duration === 'string' ? row.duration : undefined
+  const whyThisMatters = typeof row.whyThisMatters === 'string' ? row.whyThisMatters : undefined
+  const goal = typeof row.goal === 'string' ? row.goal : undefined
+  const steps = parseBlueprintSteps(row.steps)
+  const blueprintStatus =
+    row.blueprintStatus === 'loading' || row.blueprintStatus === 'ready'
+      ? row.blueprintStatus
+      : undefined
+
+  return {
+    id,
+    label,
+    title,
+    type,
+    skillType,
+    estimatedDuration,
+    duration,
+    whyThisMatters,
+    goal,
+    steps,
+    curatedResources,
+    actionItem,
+    blueprintStatus,
+    resources,
+  }
 }

@@ -2,8 +2,11 @@
 
 import { MICRO_SPRINT_WORKSPACE_LABEL } from '@/lib/careerJourneyLabels'
 import { completionStorageKey, milestoneKey } from '@/lib/premiumRoadmapTasks'
+import { getSprintTaskViewStatus, toSprintTask } from '@/lib/sprintTaskView'
 import type { SkillMilestone, SkillTask } from '@/types/careerRoadmap'
-import type { OfficialDocumentationLink } from '@/types/premiumRoadmapResources'
+import type { SprintResourceLink } from '@/types/sprintTask'
+import TaskBlueprintCodeBlock from '@/components/TaskBlueprintCodeBlock'
+import TaskDetailSkeleton from '@/components/TaskDetailSkeleton'
 import { Check, ChevronDown, ExternalLink, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -17,7 +20,7 @@ type SkillMilestoneDrawerProps = {
   togglingTaskId: string | null
 }
 
-function ResourceLinkBadge({ link }: { link: OfficialDocumentationLink }) {
+function ResourceLinkBadge({ link }: { link: SprintResourceLink }) {
   return (
     <a
       href={link.url}
@@ -30,6 +33,10 @@ function ResourceLinkBadge({ link }: { link: OfficialDocumentationLink }) {
       <ExternalLink className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
     </a>
   )
+}
+
+function formatTypeBadge(type: string): string {
+  return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 function SprintTaskAccordionCard({
@@ -47,9 +54,10 @@ function SprintTaskAccordionCard({
   onToggleExpand: () => void
   onToggleComplete: (completed: boolean) => void
 }) {
-  const resources = task.resources
-  const badgeLabel = task.skillType ?? 'Technical'
-  const durationLabel = task.estimatedDuration ?? '45 min'
+  const viewStatus = getSprintTaskViewStatus(task)
+  const sprintTask = toSprintTask(task)
+  const badgeLabel = formatTypeBadge(sprintTask.type)
+  const durationLabel = sprintTask.duration
 
   return (
     <div
@@ -68,7 +76,7 @@ function SprintTaskAccordionCard({
           disabled={isToggling}
           onChange={(event) => onToggleComplete(event.target.checked)}
           onClick={(event) => event.stopPropagation()}
-          aria-label={`Mark "${task.label}" complete`}
+          aria-label={`Mark "${sprintTask.title}" complete`}
           className="mt-0.5 h-4 w-4 shrink-0 rounded border-borderMuted text-highlight transition-all duration-200 focus:ring-cyan-400/30"
         />
 
@@ -89,7 +97,7 @@ function SprintTaskAccordionCard({
               isCompleted ? 'text-textSecondary line-through' : 'text-textPrimary'
             }`}
           >
-            {task.label}
+            {sprintTask.title}
           </span>
         </button>
 
@@ -118,7 +126,9 @@ function SprintTaskAccordionCard({
         }`}
       >
         <div className="overflow-hidden">
-          {resources ? (
+          {isExpanded && viewStatus === 'loading' ? <TaskDetailSkeleton /> : null}
+
+          {isExpanded && viewStatus === 'ready' ? (
             <div className="space-y-5 border-t border-borderMuted px-4 pb-4 pt-3">
               <section aria-labelledby={`why-${task.id}`}>
                 <h3
@@ -128,66 +138,66 @@ function SprintTaskAccordionCard({
                   Why This Matters
                 </h3>
                 <p className="mt-2 text-xs leading-relaxed text-textSecondary">
-                  {resources.conceptExplanation}
+                  {sprintTask.whyThisMatters}
                 </p>
               </section>
 
-              <section aria-labelledby={`steps-${task.id}`}>
+              <section
+                className="my-4 rounded-xl border border-borderMuted bg-accentMuted/40 px-4 py-3.5"
+                aria-labelledby={`blueprint-${task.id}`}
+              >
                 <h3
-                  id={`steps-${task.id}`}
+                  id={`blueprint-${task.id}`}
                   className="text-[10px] font-semibold uppercase tracking-[0.12em] text-textPrimary"
                 >
-                  Execution Steps
+                  🛠️ Hands-On Build Blueprint
                 </h3>
-                <ul className="mt-2 space-y-2">
-                  {resources.actionSteps.slice(0, 3).map((step) => (
-                    <li key={step} className="flex gap-2 text-xs leading-relaxed text-textSecondary">
-                      <span
-                        className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-highlight"
-                        aria-hidden
-                      />
-                      {step}
+                <p className="mt-3 text-sm font-semibold leading-relaxed text-textPrimary">
+                  {sprintTask.goal}
+                </p>
+
+                <ol className="mt-4 space-y-4">
+                  {sprintTask.steps.map((step, index) => (
+                    <li key={`${task.id}-step-${index}`} className="border-t border-borderMuted/60 pt-4 first:border-t-0 first:pt-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">
+                        {step.title.startsWith('Step') ? step.title : `Step ${index + 1}: ${step.title}`}
+                      </p>
+                      <p className="mt-1.5 text-xs leading-relaxed text-textSecondary">
+                        {step.instruction}
+                      </p>
+                      {step.codeSnippet ? (
+                        <TaskBlueprintCodeBlock
+                          codeSnippet={step.codeSnippet}
+                          codeLanguage={step.codeLanguage}
+                        />
+                      ) : null}
                     </li>
                   ))}
-                </ul>
+                </ol>
               </section>
 
-              {(resources.actionItem ?? task.actionItem) ? (
-                <section
-                  className="my-4 rounded-xl border border-borderMuted bg-accentMuted/40 px-4 py-3.5"
-                  aria-labelledby={`deliverable-${task.id}`}
-                >
+              {sprintTask.resources.length > 0 ? (
+                <section aria-labelledby={`resources-${task.id}`}>
                   <h3
-                    id={`deliverable-${task.id}`}
+                    id={`resources-${task.id}`}
                     className="text-[10px] font-semibold uppercase tracking-[0.12em] text-textPrimary"
                   >
-                    🎯 Your Action Item
+                    Curated Resources
                   </h3>
-                  <p className="mt-2.5 text-sm leading-relaxed text-textPrimary">
-                    <span className="font-bold">
-                      {resources.actionItem ?? task.actionItem}
-                    </span>
-                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {sprintTask.resources.map((link) => (
+                      <ResourceLinkBadge key={`${task.id}-${link.url}`} link={link} />
+                    ))}
+                  </div>
                 </section>
               ) : null}
-
-              <section aria-labelledby={`resources-${task.id}`}>
-                <h3
-                  id={`resources-${task.id}`}
-                  className="text-[10px] font-semibold uppercase tracking-[0.12em] text-textPrimary"
-                >
-                  Curated Resources
-                </h3>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {(resources.conceptReferences ?? []).map((link) => (
-                    <ResourceLinkBadge key={`${task.id}-${link.url}`} link={link} />
-                  ))}
-                  {resources.officialDocumentation.map((link) => (
-                    <ResourceLinkBadge key={`${task.id}-doc-${link.url}`} link={link} />
-                  ))}
-                </div>
-              </section>
             </div>
+          ) : null}
+
+          {isExpanded && viewStatus === 'loading' ? (
+            <p className="border-t border-borderMuted px-4 pb-4 pt-2 text-[11px] text-textSecondary">
+              Loading hands-on blueprint…
+            </p>
           ) : null}
         </div>
       </div>
@@ -305,7 +315,7 @@ export default function SkillMilestoneDrawer({
             Sprint task checklist
           </p>
           <p className="mt-1.5 text-[11px] leading-relaxed text-textSecondary">
-            Tap a task to expand learning resources. Check off items as you complete them.
+            Tap a task to expand the hands-on build blueprint. Check off items as you complete them.
           </p>
           <ul className="mt-5 space-y-3">
             {tasks.map((task) => {

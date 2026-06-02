@@ -1,5 +1,6 @@
 /** Structured career transition output — core free-tier value proposition. */
 import type { TaskResources } from '@/types/premiumRoadmapResources'
+import type { BlueprintStep, SprintResourceLink, SprintTaskType } from '@/types/sprintTask'
 
 export interface IntelligenceProfile {
   strengths: string[]
@@ -12,13 +13,26 @@ export type SkillTaskSkillType = 'Technical' | 'Discovery' | 'Metrics' | 'Integr
 
 export interface SkillTask {
   id: string
+  /** Display title in drawer header (falls back to label). */
   label: string
+  title?: string
+  /** Hands-on blueprint task type (lowercase). */
+  type?: SprintTaskType
   skillType?: SkillTaskSkillType
   /** Human-readable estimate, e.g. "45 min". */
   estimatedDuration?: string
-  /** Definition-of-done deliverable (also mirrored on resources when enriched). */
+  duration?: string
+  whyThisMatters?: string
+  goal?: string
+  steps?: BlueprintStep[]
+  /** Curated resource links for drawer footer. */
+  curatedResources?: SprintResourceLink[]
+  /** Definition-of-done deliverable (legacy; maps to goal). */
   actionItem?: string
+  /** Legacy LLM resource bundle; normalized to blueprint in the drawer. */
   resources?: TaskResources
+  /** Set when blueprint content is being fetched from the API. */
+  blueprintStatus?: 'loading' | 'ready'
 }
 
 export interface SkillMilestone {

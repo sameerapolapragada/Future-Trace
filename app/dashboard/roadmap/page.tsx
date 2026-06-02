@@ -9,6 +9,7 @@ import {
 import {
   formatBlueprintDurationLabel,
   formatMilestoneChapterLabel,
+  formatSprintExecutionStatement,
   MACRO_PROGRESS_SECTION_LABEL,
   MICRO_SPRINT_WORKSPACE_LABEL,
 } from '@/lib/careerJourneyLabels'
@@ -52,6 +53,22 @@ export default function PremiumRoadmapPage() {
     () => (roadmap ? enrichSkillPipeline(roadmap.skillAcquisitionPipeline) : []),
     [roadmap]
   )
+
+  const activeMilestoneIndex = useMemo(() => {
+    if (skillPipeline.length === 0) return 0
+    const firstIncomplete = skillPipeline.findIndex(
+      (step, index) => milestoneCardProgress(step, index, completedTaskKeys) < 100
+    )
+    return firstIncomplete >= 0 ? firstIncomplete : skillPipeline.length - 1
+  }, [skillPipeline, completedTaskKeys])
+
+  const focusMilestoneIndex =
+    selectedSkill !== null ? selectedSkill : activeMilestoneIndex
+
+  const focusMilestone = skillPipeline[focusMilestoneIndex]
+  const totalPhases = skillPipeline.length || 4
+  const activePhaseNumber = focusMilestoneIndex + 1
+  const activeMilestoneTitle = focusMilestone?.milestone ?? 'Your active chapter'
 
   const loadRoadmap = useCallback(async () => {
     setLoading(true)
@@ -277,7 +294,7 @@ export default function PremiumRoadmapPage() {
       </header>
 
       <section
-        className="horizon-card border-borderMuted bg-accentMuted p-6 sm:p-8"
+        className="horizon-card space-y-3 border-borderMuted bg-accentMuted p-6"
         aria-labelledby="micro-sprint-workspace-heading"
       >
         <h2
@@ -286,31 +303,15 @@ export default function PremiumRoadmapPage() {
         >
           {MICRO_SPRINT_WORKSPACE_LABEL}
         </h2>
-        <p className="mt-2 text-sm text-textSecondary">
-          Complete checkable tasks and track streak-style progress within your active milestone
-          chapter.
+        <p className="text-sm font-medium text-textPrimary">
+          🎯 Active Focus: Milestone {activePhaseNumber}/{totalPhases} — {activeMilestoneTitle}
         </p>
-        <p className="mt-2 text-[11px] font-medium text-accent">
-          Active sprint: {roadmap.immediate30DayTarget ?? '1-Month Skill Sprint'}
+        <p className="text-sm leading-relaxed text-textPrimary">
+          {formatSprintExecutionStatement(roadmap.nextMilestone)}
         </p>
-        <p className="mt-4 text-sm leading-relaxed text-textPrimary">{roadmap.nextMilestone}</p>
-        {selectedSkill !== null && skillPipeline[selectedSkill] ? (
-          <p className="mt-3 text-xs text-slate-500">
-            Working in:{' '}
-            <span className="font-medium text-textSecondary">
-              {formatMilestoneChapterLabel(
-                selectedSkill,
-                skillPipeline.length,
-                roadmap.estimatedJourneyMonths
-              )}{' '}
-              — {skillPipeline[selectedSkill].milestone}
-            </span>
-          </p>
-        ) : (
-          <p className="mt-3 text-xs text-slate-500">
-            Select a milestone below to open your task checklist.
-          </p>
-        )}
+        <p className="text-[11px] leading-relaxed text-textSecondary">
+          👇 Select a micro-task below to open your hands-on build canvas.
+        </p>
       </section>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-10">
