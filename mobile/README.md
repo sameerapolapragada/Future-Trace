@@ -15,6 +15,19 @@ npx expo start
 - Press **i** — iOS Simulator  
 - Press **a** — Android Emulator  
 
+### "Failed to download remote update" on a phone
+
+Expo Go could not reach your dev server (not a Supabase/git issue). Try in order:
+
+1. **Run from `mobile/` only** — `cd mobile` before `npx expo start` (not the repo root).
+2. **Clear cache** — `npx expo start -c`
+3. **Tunnel mode** (different Wi‑Fi / firewall) — `npx expo start --tunnel`
+4. **Same network** — phone and Mac on the same Wi‑Fi, or use tunnel.
+5. **SDK match** — install [Expo Go](https://expo.dev/go) that supports **SDK 54** (project uses Expo ~54).
+6. **Simulator** — `npx expo start` then press **i** or **a** (avoids LAN issues).
+
+If it still fails: temporarily disable VPN/firewall, or reboot your router (some LAN setups block device-to-Mac traffic).
+
 ## Navigation
 
 Gold-gradient **drawer** (matches web home panel):
