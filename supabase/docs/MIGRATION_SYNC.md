@@ -44,12 +44,16 @@ Current files in git (full chain):
 - `20260529120000_profiles_ai_scan_history.sql` (sync stub if applied from Dev)
 - `20260529130000_ai_scan_history_usage.sql` (sync stub if applied from Dev)
 - `20260530120000_gdpr_ccpa_compliance_data_layer.sql`
-- `20260531120000_web_dev_git_supabase_sync_test.sql` (if present on branch)
+- `20260531_add_is_premium_to_profiles.sql`
+- `20260531120000_web_dev_git_supabase_sync_test.sql`
+- `20260531120000_ai_scan_history_job_title.sql` (no-op stub — remote may still record this version after rename to `20260601120100`)
 - `20260601120000_schedule_data_minimization_cron.sql`
 - `20260601120100_ai_scan_history_job_title.sql`
 - `20260601120200_ai_scan_history_career_roadmap.sql`
+- `20260601130000_roadmap_task_completions.sql`
+- `20260602120000_master_milestone_blueprints.sql`
 
-Any **extra** row from the SQL query below must get a matching `YYYYMMDDHHMMSS_*.sql` file.
+Any **extra** row from the SQL query below must get a matching `YYYYMMDDHHMMSS_*.sql` file (or exact polluted prefix, e.g. `20260531120000_ai_scan_history_job_title.sql`).
 
 ### Quick repair (run in SQL Editor)
 
