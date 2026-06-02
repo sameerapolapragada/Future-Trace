@@ -7,30 +7,43 @@ Expo app on the **`Dev`** git branch. Uses the **same Supabase project and schem
 ```bash
 cd mobile
 cp .env.example .env
-# EXPO_PUBLIC_SUPABASE_URL + EXPO_PUBLIC_SUPABASE_ANON_KEY (same as web)
 npm install
-npx expo start
 ```
 
-- Press **i** — iOS Simulator  
-- Press **a** — Android Emulator  
+## Run on a **physical phone** (fixes “Failed to download remote update”)
 
-### "Failed to download remote update" on a phone
+That error means Expo Go on your phone could not reach the JS bundle on your Mac—not Supabase or git.
 
-Expo Go could not reach your dev server (not a Supabase/git issue). Try in order:
+```bash
+cd mobile
+npm run start:phone
+```
 
-1. **Run from `mobile/` only** — `cd mobile` before `npx expo start` (not the repo root).
-2. **Clear cache** — `npx expo start -c`
-3. **Tunnel mode** (different Wi‑Fi / firewall) — `npx expo start --tunnel`
-4. **Same network** — phone and Mac on the same Wi‑Fi, or use tunnel.
-5. **SDK match** — install [Expo Go](https://expo.dev/go) that supports **SDK 54** (project uses Expo ~54).
-6. **Simulator** — `npx expo start` then press **i** or **a** (avoids LAN issues).
+1. Wait until the terminal shows a **QR code** and a `exp://…` URL (tunnel, not `127.0.0.1`).
+2. On your phone: **force-quit Expo Go** → open again (or clear Expo Go storage).
+3. Scan the **new** QR from this terminal only (do not reuse an old link).
+4. Ensure **Expo Go supports SDK 54** ([expo.dev/go](https://expo.dev/go)).
 
-If it still fails: temporarily disable VPN/firewall, or reboot your router (some LAN setups block device-to-Mac traffic).
+If tunnel is slow or fails, try same Wi‑Fi + LAN:
+
+```bash
+npm run start:reset
+npm run start:clear
+```
+
+Use the QR that shows your Mac’s **LAN IP** (e.g. `exp://192.168.x.x:8081`), not `127.0.0.1`.
+
+## Run on **simulator** (easiest)
+
+```bash
+cd mobile
+npm run start:clear
+# Press i (iOS Simulator) or a (Android Emulator)
+```
 
 ## Navigation
 
-Gold-gradient **drawer** (matches web home panel):
+Gold-gradient **drawer** (matches web):
 
 - Home  
 - AI Evolution Timeline  
@@ -38,12 +51,10 @@ Gold-gradient **drawer** (matches web home panel):
 - Jobs Affected by AI Evolution  
 - What Comes Next  
 
-Legacy routes `(auth)` and `(app)` tabs remain in the repo for sign-in and score flows.
-
 ## Branch policy
 
-Commit mobile changes to **`Dev` only** — do not merge into `Web-Dev`.
+Commit mobile changes to **`Dev` only** — not `Web-Dev`.
 
 ## Supabase
 
-`lib/supabase.ts` is ready for auth and data when you wire real sign-in. Schema migrations live in `/supabase/migrations` at the repo root.
+Same keys as web: `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` in `mobile/.env`.
