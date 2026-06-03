@@ -2,11 +2,18 @@
 
 import SignOutButton from '@/components/SignOutButton'
 import CareerRoadmapCard from '@/components/CareerRoadmapCard'
-import DashboardNav from '@/components/DashboardNav'
+import DashboardNav, { type DashboardView } from '@/components/DashboardNav'
+import IntelligenceProfileGrid from '@/components/IntelligenceProfileGrid'
+import MatcherFreeHistoryList, {
+  type MatcherFreeHistoryEntry,
+} from '@/components/MatcherFreeHistoryList'
+import MatcherPageMenu from '@/components/MatcherPageMenu'
+import TransitionPathComingSoonView from '@/components/TransitionPathComingSoonView'
+import MatcherResultsView from '@/components/MatcherResultsView'
 import NewAnalysisInputView from '@/components/NewAnalysisInputView'
 import PremiumUpgradeButton from '@/components/PremiumUpgradeButton'
 import { buildRoadmapSummary, scoreExposureLabel, scoreGaugeColor } from '@/lib/analyzeResume'
-import { buildDefaultCareerRoadmap, buildRoadmapShareText, parseCareerRoadmap } from '@/lib/careerRoadmap'
+import { buildDefaultCareerRoadmap, buildRoadmapShareText, ensureIntelligenceProfile, parseCareerRoadmap } from '@/lib/careerRoadmap'
 import {
   formatBlueprintDurationLabel,
   MACRO_PROGRESS_SECTION_LABEL,
@@ -32,15 +39,21 @@ import {
   Settings,
   Share2,
   Shield,
+  Target,
   Trash2,
   User,
   X,
 } from 'lucide-react'
 import Link from 'next/link'
-import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-
-type DashboardView = 'shield' | 'profile'
+import { ChangeEvent, DragEvent, FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { SHOW_CAREER_SHIELD_BETA } from '@/lib/featureFlags'
+import { isMissingMatcherColumnError, selectDashboardProfile } from '@/lib/matcherProfileSelect'
+import { isMatcherPaidTier } from '@/lib/matcherTier'
+import { rollingScanWindowStart } from '@/lib/scanLimits'
+import { MATCHER_SUBMIT_LABEL } from '@/lib/matcherCopy'
+import type { MatcherScanResponse } from '@/types/matcherScan'
+import type { MatcherTab } from '@/lib/dashboardNavItems'
 
 type ScanRow = {
   id: string
@@ -49,6 +62,8 @@ type ScanRow = {
   free_summary?: string | null
   job_title?: string | null
   career_roadmap?: CareerRoadmap | null
+  target_role?: string | null
+  market_risk_score?: number | null
 }
 
 function DashboardSkeleton() {
@@ -78,7 +93,13 @@ const LOADING_CAPTIONS = [
   'Building your personalized career route...',
 ]
 
-type ShieldTab = 'analysis' | 'history'
+const MATCHER_LOADING_CAPTIONS = [
+  'Calculating market risk for your target role...',
+  'Benchmarking role exposure against current labor signals...',
+  'Preparing your transition intelligence snapshot...',
+]
+
+type ShieldTab = MatcherTab
 
 type ShieldPhase = 'form' | 'loading' | 'results'
 
@@ -495,6 +516,7 @@ function HistoryTabPanel({
   onRunAnotherScan,
   onPremiumStatusChange,
   premiumRefreshToken,
+  matcherFreeEntries,
 }: {
   entries: HistoryEntry[]
   selectedEntryId: string | null
@@ -504,7 +526,14 @@ function HistoryTabPanel({
   onRunAnotherScan: () => void
   onPremiumStatusChange: (isPremium: boolean) => void
   premiumRefreshToken: number
+  matcherFreeEntries?: MatcherFreeHistoryEntry[]
 }) {
+  if (matcherFreeEntries) {
+    return (
+      <MatcherFreeHistoryList entries={matcherFreeEntries} onStartAnalysis={onStartAnalysis} />
+    )
+  }
+
   if (entries.length === 0) {
     return <HistoryEmptyState onStartAnalysis={onStartAnalysis} />
   }
@@ -594,45 +623,81 @@ function AnalysisResultsLayout({
   onPremiumStatusChange: (isPremium: boolean) => void
   premiumRefreshToken: number
 }) {
-  return (
-    <section className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
-      <div className="flex min-w-0 flex-col gap-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">
-          {MACRO_PROGRESS_SECTION_LABEL}
-        </p>
-        <RoleTransitionStatusBar roadmap={result.roadmap} />
-        <MacroBlueprintDurationBar roadmap={result.roadmap} />
-        <AnalysisResultCard
-          roadmap={result.roadmap}
-          isPremium={isPremium}
-          userId={userId}
-          onPremiumStatusChange={onPremiumStatusChange}
-          premiumRefreshToken={premiumRefreshToken}
-        />
-      </div>
+  const intelligenceProfile = ensureIntelligenceProfile(result.roadmap)
 
-      <div className="flex flex-col gap-4">
-        <JourneyScopeLegend />
-        <TargetRoleSummaryBar result={result} />
-        <button
-          type="button"
-          onClick={onRunAnotherScan}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-trace-border bg-trace-surface py-3 text-sm font-medium text-textSecondary transition hover:bg-trace-raised"
-        >
-          <RefreshCw className="h-4 w-4" aria-hidden />
-          Run Another Scan
-        </button>
-        {!isPremium ? (
-          <SidebarPremiumUpgrade
+  return (
+    <>
+      {!SHOW_CAREER_SHIELD_BETA ? (
+        <section className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+          <TargetRoleSummaryBar result={result} />
+          <IntelligenceProfileGrid
+            profile={intelligenceProfile}
             isPremium={isPremium}
+            userId={userId}
             onPremiumStatusChange={onPremiumStatusChange}
             premiumRefreshToken={premiumRefreshToken}
           />
-        ) : null}
-        {!isPremium ? <TemporaryScanNotice /> : null}
-        <MethodologyDataTransparencyCard />
-      </div>
-    </section>
+          <button
+            type="button"
+            onClick={onRunAnotherScan}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-trace-border bg-trace-surface py-3 text-sm font-medium text-textSecondary transition hover:bg-trace-raised"
+          >
+            <RefreshCw className="h-4 w-4" aria-hidden />
+            Run Another Scan
+          </button>
+          {!isPremium ? (
+            <SidebarPremiumUpgrade
+              isPremium={isPremium}
+              onPremiumStatusChange={onPremiumStatusChange}
+              premiumRefreshToken={premiumRefreshToken}
+            />
+          ) : null}
+          {!isPremium ? <TemporaryScanNotice /> : null}
+          <MethodologyDataTransparencyCard />
+        </section>
+      ) : null}
+
+      {SHOW_CAREER_SHIELD_BETA ? (
+        <section className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6">
+          <div className="flex min-w-0 flex-col gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-textSecondary">
+              {MACRO_PROGRESS_SECTION_LABEL}
+            </p>
+            <RoleTransitionStatusBar roadmap={result.roadmap} />
+            <MacroBlueprintDurationBar roadmap={result.roadmap} />
+            <AnalysisResultCard
+              roadmap={result.roadmap}
+              isPremium={isPremium}
+              userId={userId}
+              onPremiumStatusChange={onPremiumStatusChange}
+              premiumRefreshToken={premiumRefreshToken}
+            />
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <JourneyScopeLegend />
+            <TargetRoleSummaryBar result={result} />
+            <button
+              type="button"
+              onClick={onRunAnotherScan}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-trace-border bg-trace-surface py-3 text-sm font-medium text-textSecondary transition hover:bg-trace-raised"
+            >
+              <RefreshCw className="h-4 w-4" aria-hidden />
+              Run Another Scan
+            </button>
+            {!isPremium ? (
+              <SidebarPremiumUpgrade
+                isPremium={isPremium}
+                onPremiumStatusChange={onPremiumStatusChange}
+                premiumRefreshToken={premiumRefreshToken}
+              />
+            ) : null}
+            {!isPremium ? <TemporaryScanNotice /> : null}
+            <MethodologyDataTransparencyCard />
+          </div>
+        </section>
+      ) : null}
+    </>
   )
 }
 
@@ -647,10 +712,13 @@ type ShieldViewProps = {
   fullName: string
   jobRole: string
   isPremium: boolean
+  matcherPaidAccess: boolean
   recentScans: ScanRow[]
   onScanComplete: () => void
   onPremiumStatusChange: (isPremium: boolean) => void
   premiumRefreshToken: number
+  shieldTab: ShieldTab
+  onShieldTabChange: (tab: ShieldTab) => void
 }
 
 function ShieldView({
@@ -658,11 +726,15 @@ function ShieldView({
   fullName,
   jobRole,
   isPremium,
+  matcherPaidAccess,
   recentScans,
   onScanComplete,
   onPremiumStatusChange,
   premiumRefreshToken,
+  shieldTab,
+  onShieldTabChange,
 }: ShieldViewProps) {
+  const matcherFreeHistory = !SHOW_CAREER_SHIELD_BETA && !matcherPaidAccess
   const [phase, setPhase] = useState<ShieldPhase>('form')
   const [resumeText, setResumeText] = useState('')
   const [currentJobTitle, setCurrentJobTitle] = useState(() => formatJobTitle(jobRole))
@@ -672,11 +744,11 @@ function ShieldView({
   const [roadmapSummary, setRoadmapSummary] = useState('')
   const [analyzedJobTitle, setAnalyzedJobTitle] = useState('')
   const [analyzedScore, setAnalyzedScore] = useState<number | null>(null)
+  const [matcherResult, setMatcherResult] = useState<MatcherScanResponse | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isDraggingFile, setIsDraggingFile] = useState(false)
-  const [shieldTab, setShieldTab] = useState<ShieldTab>('analysis')
   const [lastScanDate, setLastScanDate] = useState<string | null>(null)
   const [selectedHistoryEntryId, setSelectedHistoryEntryId] = useState<string | null>(null)
   const [scanBalanceRefreshToken, setScanBalanceRefreshToken] = useState(0)
@@ -710,26 +782,63 @@ function ShieldView({
       })
     }
 
-    return dedupeHistoryEntriesByRole(
-      entries.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
+    const sorted = entries.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     )
-  }, [currentSessionResult, lastScanDate, recentScans, jobRole])
+
+    if (matcherFreeHistory) {
+      return sorted
+    }
+
+    return dedupeHistoryEntriesByRole(sorted)
+  }, [currentSessionResult, lastScanDate, recentScans, jobRole, matcherFreeHistory])
+
+  const matcherFreeHistoryEntries = useMemo((): MatcherFreeHistoryEntry[] | undefined => {
+    if (!matcherFreeHistory) return undefined
+
+    const items: MatcherFreeHistoryEntry[] = []
+
+    if (matcherResult) {
+      items.push({
+        id: '__session__',
+        targetRole: matcherResult.targetRole,
+        marketRiskScore: matcherResult.marketRiskScore,
+        createdAt: lastScanDate ?? new Date().toISOString(),
+      })
+    }
+
+    for (const scan of recentScans) {
+      items.push({
+        id: scan.id,
+        targetRole: scan.target_role?.trim() || scan.job_title?.trim() || 'Target role',
+        marketRiskScore: scan.market_risk_score ?? scan.overall_score,
+        createdAt: scan.created_at,
+      })
+    }
+
+    const seen = new Set<string>()
+    return items
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter((entry) => {
+        if (seen.has(entry.id)) return false
+        seen.add(entry.id)
+        return true
+      })
+  }, [matcherFreeHistory, matcherResult, recentScans, lastScanDate])
 
   function goToNewAnalysis() {
-    setShieldTab('analysis')
+    onShieldTabChange('analysis')
     setSelectedHistoryEntryId(null)
   }
 
   function startNewAnalysis() {
     resetToForm()
     setSelectedHistoryEntryId(null)
-    setShieldTab('analysis')
+    onShieldTabChange('analysis')
   }
 
   useEffect(() => {
-    if (shieldTab !== 'history' || historyEntries.length === 0) return
+    if (matcherFreeHistory || shieldTab !== 'history' || historyEntries.length === 0) return
 
     const hasValidSelection =
       selectedHistoryEntryId !== null &&
@@ -738,7 +847,7 @@ function ShieldView({
     if (!hasValidSelection) {
       setSelectedHistoryEntryId(historyEntries[0].id)
     }
-  }, [shieldTab, historyEntries, selectedHistoryEntryId])
+  }, [matcherFreeHistory, shieldTab, historyEntries, selectedHistoryEntryId])
 
   useEffect(() => {
     setCurrentJobTitle((prev) => (prev.trim() ? prev : formatJobTitle(jobRole)))
@@ -747,8 +856,9 @@ function ShieldView({
   useEffect(() => {
     if (phase !== 'loading') return
 
+    const captions = SHOW_CAREER_SHIELD_BETA ? LOADING_CAPTIONS : MATCHER_LOADING_CAPTIONS
     const interval = window.setInterval(() => {
-      setLoadingCaptionIndex((prev) => (prev + 1) % LOADING_CAPTIONS.length)
+      setLoadingCaptionIndex((prev) => (prev + 1) % captions.length)
     }, 2200)
 
     return () => window.clearInterval(interval)
@@ -763,6 +873,60 @@ function ShieldView({
     const trimmedTitle = formatJobTitle(targetJobTitle)
     const hasFile = uploadedFile !== null
     const hasText = trimmedResume.length >= 40
+
+    if (!SHOW_CAREER_SHIELD_BETA) {
+      if (!trimmedCurrent) {
+        setFormError('Enter your current job title.')
+        return
+      }
+
+      if (!trimmedTitle) {
+        setFormError('Enter your target job title.')
+        return
+      }
+
+      setCurrentJobTitle(trimmedCurrent)
+      setTargetJobTitle(trimmedTitle)
+      setPhase('loading')
+      setLoadingCaptionIndex(0)
+
+      try {
+        const formData = new FormData()
+        formData.append('targetRole', trimmedTitle)
+        formData.append('currentRole', trimmedCurrent)
+        if (hasFile) {
+          formData.append('file', uploadedFile)
+        } else if (hasText) {
+          formData.append('resumeText', trimmedResume)
+        }
+
+        const response = await fetch('/api/matcher/scan', {
+          method: 'POST',
+          body: formData,
+        })
+
+        const payload = (await response.json()) as MatcherScanResponse & { error?: string }
+
+        if (!response.ok) {
+          setPhase('form')
+          setFormError(payload.error ?? 'Analysis failed. Please try again.')
+          return
+        }
+
+        setMatcherResult(payload)
+        setAnalyzedJobTitle(trimmedTitle)
+        setAnalyzedScore(payload.marketRiskScore)
+        setLastScanDate(new Date().toISOString())
+        setSelectedHistoryEntryId(null)
+        setPhase('results')
+        onScanComplete()
+        setScanBalanceRefreshToken((token) => token + 1)
+      } catch {
+        setPhase('form')
+        setFormError('Network error. Check your connection and try again.')
+      }
+      return
+    }
 
     if (!hasFile && !hasText) {
       setFormError('Upload your resume or paste at least 40 characters of text.')
@@ -786,7 +950,6 @@ function ShieldView({
     setLoadingCaptionIndex(0)
 
     try {
-      // In-memory only — file bytes go straight to the API; no Supabase Storage upload.
       const formData = new FormData()
       formData.append('jobTitle', trimmedTitle)
       formData.append('currentJobTitle', trimmedCurrent)
@@ -846,6 +1009,7 @@ function ShieldView({
     setRoadmapSummary('')
     setAnalyzedJobTitle('')
     setAnalyzedScore(null)
+    setMatcherResult(null)
   }
 
   function selectResumeFile(file: File) {
@@ -881,25 +1045,32 @@ function ShieldView({
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div
+      className={`flex flex-col gap-6 ${!SHOW_CAREER_SHIELD_BETA ? 'mx-auto w-full max-w-4xl' : ''}`}
+    >
       <header>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="flex items-center gap-2.5">
-              <Shield className="h-6 w-6 shrink-0 text-accent" aria-hidden />
-              <h1 className="text-xl font-bold text-textPrimary md:text-2xl">AI Career Shield</h1>
+              <Target className="h-6 w-6 shrink-0 text-accent" aria-hidden />
+              <h1 className="text-xl font-bold text-textPrimary md:text-2xl">
+                {SHOW_CAREER_SHIELD_BETA ? 'AI Career Transition Path' : 'AI Career Matcher'}
+              </h1>
             </div>
             <p className="mt-1.5 text-sm text-textSecondary">
-              Analyze your AI exposure risk and career resilience.
+              {SHOW_CAREER_SHIELD_BETA
+                ? 'Analyze your AI exposure risk and career resilience.'
+                : 'Upload your resume, see your exposure score, and explore matched role insights.'}
             </p>
-            {isPremium ? (
+            {SHOW_CAREER_SHIELD_BETA && isPremium ? (
               <span className="horizon-badge-active mt-3 inline-block rounded-full px-3 py-1 text-xs font-semibold">
                 Pro
               </span>
             ) : null}
           </div>
 
-          {isPremium ? (
+          <div className="flex items-center gap-2">
+          {SHOW_CAREER_SHIELD_BETA && isPremium ? (
             <Link
               href="/dashboard/roadmap"
               className="btn-primary w-full gap-2 sm:w-auto"
@@ -909,39 +1080,40 @@ function ShieldView({
               <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
             </Link>
           ) : null}
+          </div>
         </div>
       </header>
 
       <div className="flex flex-col gap-4 border-b border-borderMuted pb-0 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setShieldTab('analysis')
-            setSelectedHistoryEntryId(null)
-          }}
-          className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
-            shieldTab === 'analysis'
-              ? 'horizon-nav-active'
-              : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
-          }`}
-        >
-          New Analysis
-        </button>
-        <button
-          type="button"
-          onClick={() => setShieldTab('history')}
-          className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
-            shieldTab === 'history'
-              ? 'horizon-nav-active'
-              : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
-          }`}
-        >
-          History
-        </button>
+          <button
+            type="button"
+            onClick={() => {
+              onShieldTabChange('analysis')
+              setSelectedHistoryEntryId(null)
+            }}
+            className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
+              shieldTab === 'analysis'
+                ? 'horizon-nav-active'
+                : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
+            }`}
+          >
+            {SHOW_CAREER_SHIELD_BETA ? 'New Analysis' : 'Career Matcher'}
+          </button>
+          <button
+            type="button"
+            onClick={() => onShieldTabChange('history')}
+            className={`horizon-interactive rounded-lg px-4 py-2 text-sm font-medium ${
+              shieldTab === 'history'
+                ? 'horizon-nav-active'
+                : 'text-textSecondary hover:bg-accentMuted/60 hover:text-textPrimary'
+            }`}
+          >
+            History
+          </button>
         </div>
 
-        {shieldTab === 'history' && historyEntries.length > 0 ? (
+        {shieldTab === 'history' && !matcherFreeHistory && historyEntries.length > 0 ? (
           <PastAnalysisSelector
             entries={historyEntries}
             selectedEntryId={selectedHistoryEntryId}
@@ -961,11 +1133,13 @@ function ShieldView({
           onRunAnotherScan={startNewAnalysis}
           onPremiumStatusChange={onPremiumStatusChange}
           premiumRefreshToken={premiumRefreshToken}
+          matcherFreeEntries={matcherFreeHistoryEntries}
         />
       ) : null}
 
-      {shieldTab === 'analysis' && roadmapData === null && phase === 'form' ? (
-        <NewAnalysisInputView
+      {shieldTab === 'analysis' && roadmapData === null && matcherResult === null && phase === 'form' ? (
+        <div className={!SHOW_CAREER_SHIELD_BETA ? 'mx-auto w-full max-w-4xl' : undefined}>
+          <NewAnalysisInputView
           resumeText={resumeText}
           currentJobTitle={currentJobTitle}
           targetJobTitle={targetJobTitle}
@@ -997,10 +1171,17 @@ function ShieldView({
           onClearFile={clearUploadedFile}
           onSubmit={handleAnalyze}
           scanBalanceRefreshToken={scanBalanceRefreshToken}
+          submitButtonLabel={
+            SHOW_CAREER_SHIELD_BETA
+              ? 'Generate My Transition Roadmap'
+              : MATCHER_SUBMIT_LABEL
+          }
         />
+        </div>
       ) : null}
 
       {shieldTab === 'analysis' && phase === 'loading' ? (
+        <div className={!SHOW_CAREER_SHIELD_BETA ? 'mx-auto w-full max-w-4xl' : undefined}>
         <section
           className="flex flex-col items-center rounded-2xl border border-trace-border bg-trace-surface px-6 py-14 text-center ring-1 ring-sky-900/40/50"
           aria-live="polite"
@@ -1015,12 +1196,17 @@ function ShieldView({
             key={loadingCaptionIndex}
             className="mt-2 max-w-xs animate-pulse text-xs text-textSecondary"
           >
-            {LOADING_CAPTIONS[loadingCaptionIndex]}
+            {(SHOW_CAREER_SHIELD_BETA ? LOADING_CAPTIONS : MATCHER_LOADING_CAPTIONS)[loadingCaptionIndex]}
           </p>
         </section>
+        </div>
       ) : null}
 
-      {shieldTab === 'analysis' && roadmapData !== null && phase === 'results' && currentSessionResult ? (
+      {shieldTab === 'analysis' && !SHOW_CAREER_SHIELD_BETA && matcherResult && phase === 'results' ? (
+        <MatcherResultsView result={matcherResult} onRunAnotherScan={startNewAnalysis} />
+      ) : null}
+
+      {shieldTab === 'analysis' && SHOW_CAREER_SHIELD_BETA && roadmapData !== null && phase === 'results' && currentSessionResult ? (
         <AnalysisResultsLayout
           result={currentSessionResult}
           isPremium={isPremium}
@@ -1051,6 +1237,7 @@ type ProfileViewProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   onPremiumStatusChange: (isPremium: boolean) => void
   premiumRefreshToken: number
+  onBackToMatcher?: () => void
 }
 
 function formatMemberSince(iso: string | null): string {
@@ -1130,6 +1317,7 @@ function ProfileView({
   onSubmit,
   onPremiumStatusChange,
   premiumRefreshToken,
+  onBackToMatcher,
 }: ProfileViewProps) {
   const router = useRouter()
   const [exportLoading, setExportLoading] = useState(false)
@@ -1233,9 +1421,21 @@ function ProfileView({
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
         <h1 className="text-xl font-bold text-textPrimary md:text-2xl">Profile Settings</h1>
         <p className="mt-1 text-sm text-textSecondary">Manage your account settings and preferences</p>
+        </div>
+        {onBackToMatcher ? (
+          <button
+            type="button"
+            onClick={onBackToMatcher}
+            className="horizon-interactive inline-flex items-center gap-2 rounded-xl border border-trace-border bg-trace-surface px-3 py-2 text-sm font-medium text-textSecondary hover:text-textPrimary"
+          >
+            <Target className="h-4 w-4 shrink-0" aria-hidden />
+            Back to Career Matcher
+          </button>
+        ) : null}
       </header>
 
       {success ? (
@@ -1276,8 +1476,8 @@ function ProfileView({
           <h2 className="mt-4 text-lg font-semibold text-textPrimary">{displayName}</h2>
           <p className="mt-0.5 text-sm text-textSecondary">{email}</p>
           <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-trace-border bg-accentMuted px-3 py-1 text-xs font-medium text-accent">
-            <Shield className="h-3.5 w-3.5 text-accent" aria-hidden />
-            {isPremium ? 'Premium Account' : 'Free Account'}
+            <User className="h-3.5 w-3.5 text-accent" aria-hidden />
+            {SHOW_CAREER_SHIELD_BETA && isPremium ? 'Premium Account' : 'Account'}
           </span>
         </div>
 
@@ -1296,7 +1496,7 @@ function ProfileView({
           </div>
         </dl>
 
-        {!isPremium ? (
+        {!isPremium && SHOW_CAREER_SHIELD_BETA ? (
           <PremiumUpgradeButton
             className="btn-primary mt-5 flex w-full items-center justify-center gap-2"
             isPremium={isPremium}
@@ -1486,11 +1686,13 @@ function ProfileView({
 
 export default function DashboardPage() {
   const [view, setView] = useState<DashboardView>('shield')
+  const [matcherTab, setMatcherTab] = useState<MatcherTab>('analysis')
   const [userId, setUserId] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
   const [currentRole, setCurrentRole] = useState('')
   const [isPremium, setIsPremium] = useState(false)
+  const [matcherPaidAccess, setMatcherPaidAccess] = useState(false)
   const [premiumRefreshToken, setPremiumRefreshToken] = useState(0)
   const [premiumWelcome, setPremiumWelcome] = useState(false)
   const [recentScans, setRecentScans] = useState<ScanRow[]>([])
@@ -1548,6 +1750,7 @@ export default function DashboardPage() {
 
       if (payload.isPremium) {
         setIsPremium(true)
+        setMatcherPaidAccess(true)
         setPremiumWelcome(true)
         return true
       }
@@ -1563,6 +1766,56 @@ export default function DashboardPage() {
     if (!userId) return
 
     const supabase = createClient()
+
+    if (!SHOW_CAREER_SHIELD_BETA) {
+      const windowStart = rollingScanWindowStart()
+      const [{ data: scans, error: scansError }, { count, error: countError }, { data: latestScan }] =
+        await Promise.all([
+          supabase
+            .from('user_resume_scans')
+            .select('id, target_role, market_risk_score, created_at')
+            .eq('profile_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(25),
+          supabase
+            .from('user_resume_scans')
+            .select('*', { count: 'exact', head: true })
+            .eq('profile_id', userId)
+            .gte('created_at', windowStart),
+          supabase
+            .from('user_resume_scans')
+            .select('created_at')
+            .eq('profile_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ])
+
+      const tableMissing =
+        (scansError && isMissingMatcherColumnError(scansError.message)) ||
+        (countError && isMissingMatcherColumnError(countError.message))
+
+      if (!tableMissing) {
+        setRecentScans(
+          (scans ?? []).map((scan) => ({
+            id: scan.id,
+            overall_score: scan.market_risk_score,
+            created_at: scan.created_at,
+            job_title: scan.target_role,
+            target_role: scan.target_role,
+            market_risk_score: scan.market_risk_score,
+          })),
+        )
+        setScansThisMonth(count ?? 0)
+        setLastScanAt(latestScan?.created_at ?? null)
+      } else {
+        setRecentScans([])
+        setScansThisMonth(0)
+        setLastScanAt(null)
+      }
+      return
+    }
+
     const startOfMonth = new Date()
     startOfMonth.setDate(1)
     startOfMonth.setHours(0, 0, 0, 0)
@@ -1589,7 +1842,6 @@ export default function DashboardPage() {
     ])
 
     setRecentScans(scans ?? [])
-
     setScansThisMonth(count ?? 0)
     setLastScanAt(latestScan?.created_at ?? null)
   }, [userId])
@@ -1669,16 +1921,12 @@ export default function DashboardPage() {
         }
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email, full_name, job_role, is_premium')
-        .eq('id', user.id)
-        .maybeSingle()
+      const { profile, error: profileError } = await selectDashboardProfile(supabase, user.id)
 
       if (cancelled) return
 
       if (profileError) {
-        setError(profileError.message)
+        setError(profileError)
         setLoading(false)
         return
       }
@@ -1688,6 +1936,7 @@ export default function DashboardPage() {
         setFullName(profile.full_name ?? '')
         setCurrentRole(profile.job_role ?? '')
         setIsPremium(profile.is_premium ?? false)
+        setMatcherPaidAccess(isMatcherPaidTier(profile))
 
         if (!profile.is_premium) {
           try {
@@ -1698,6 +1947,7 @@ export default function DashboardPage() {
             }
             if (syncResponse.ok && syncPayload.isPremium) {
               setIsPremium(true)
+              setMatcherPaidAccess(true)
               if (syncPayload.synced) {
                 setPremiumWelcome(true)
               }
@@ -1708,25 +1958,26 @@ export default function DashboardPage() {
         }
       }
 
-      const startOfMonth = new Date()
-      startOfMonth.setDate(1)
-      startOfMonth.setHours(0, 0, 0, 0)
-
-      const [{ data: scans, error: scansError }, { count }, { data: latestScan }] =
-        await Promise.all([
+      if (!SHOW_CAREER_SHIELD_BETA) {
+        const windowStart = rollingScanWindowStart()
+        const [
+          { data: scans, error: scansError },
+          { count, error: countError },
+          { data: latestScan },
+        ] = await Promise.all([
           supabase
-            .from('ai_scan_history')
-            .select('id, overall_score, created_at, free_summary, job_title, career_roadmap')
+            .from('user_resume_scans')
+            .select('id, target_role, market_risk_score, created_at')
             .eq('profile_id', user.id)
             .order('created_at', { ascending: false })
             .limit(25),
           supabase
-            .from('ai_scan_history')
+            .from('user_resume_scans')
             .select('*', { count: 'exact', head: true })
             .eq('profile_id', user.id)
-            .gte('created_at', startOfMonth.toISOString()),
+            .gte('created_at', windowStart),
           supabase
-            .from('ai_scan_history')
+            .from('user_resume_scans')
             .select('created_at')
             .eq('profile_id', user.id)
             .order('created_at', { ascending: false })
@@ -1734,14 +1985,66 @@ export default function DashboardPage() {
             .maybeSingle(),
         ])
 
-      if (cancelled) return
+        if (cancelled) return
 
-      if (!scansError) {
-        setRecentScans(scans ?? [])
+        const tableMissing =
+          (scansError && isMissingMatcherColumnError(scansError.message)) ||
+          (countError && isMissingMatcherColumnError(countError.message))
+
+        if (!tableMissing && !scansError) {
+          setRecentScans(
+            (scans ?? []).map((scan) => ({
+              id: scan.id,
+              overall_score: scan.market_risk_score,
+              created_at: scan.created_at,
+              job_title: scan.target_role,
+              target_role: scan.target_role,
+              market_risk_score: scan.market_risk_score,
+            })),
+          )
+          setScansThisMonth(count ?? 0)
+          setLastScanAt(latestScan?.created_at ?? null)
+        } else if (tableMissing) {
+          setRecentScans([])
+          setScansThisMonth(0)
+          setLastScanAt(null)
+        }
+      } else {
+        const startOfMonth = new Date()
+        startOfMonth.setDate(1)
+        startOfMonth.setHours(0, 0, 0, 0)
+
+        const [{ data: scans, error: scansError }, { count }, { data: latestScan }] =
+          await Promise.all([
+            supabase
+              .from('ai_scan_history')
+              .select('id, overall_score, created_at, free_summary, job_title, career_roadmap')
+              .eq('profile_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(25),
+            supabase
+              .from('ai_scan_history')
+              .select('*', { count: 'exact', head: true })
+              .eq('profile_id', user.id)
+              .gte('created_at', startOfMonth.toISOString()),
+            supabase
+              .from('ai_scan_history')
+              .select('created_at')
+              .eq('profile_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle(),
+          ])
+
+        if (cancelled) return
+
+        if (!scansError) {
+          setRecentScans(scans ?? [])
+        }
+
+        setScansThisMonth(count ?? 0)
+        setLastScanAt(latestScan?.created_at ?? null)
       }
-
-      setScansThisMonth(count ?? 0)
-      setLastScanAt(latestScan?.created_at ?? null)
 
       setLoading(false)
     }
@@ -1783,10 +2086,27 @@ export default function DashboardPage() {
 
   return (
     <div className="relative -mx-4 -my-8 min-h-screen text-textSecondary sm:-mx-6 md:-mx-8 md:-my-12">
-      <DashboardNav view={view} onViewChange={setView} />
+      <DashboardNav
+        view={view}
+        onViewChange={setView}
+        showCareerShieldBeta={SHOW_CAREER_SHIELD_BETA}
+        matcherTab={matcherTab}
+        onMatcherTabChange={setMatcherTab}
+      />
+
+      {!SHOW_CAREER_SHIELD_BETA && !loading ? (
+        <MatcherPageMenu
+          onOpenProfile={() => setView('profile')}
+          onOpenTransitionPath={() => setView('transitionPath')}
+        />
+      ) : null}
 
       <div className="w-full min-h-screen p-4 md:p-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-6 pb-24 md:pb-8">
+        <div
+          className={`mx-auto flex flex-col gap-6 md:pb-8 ${
+            !SHOW_CAREER_SHIELD_BETA ? 'pb-8' : 'pb-24'
+          } ${!SHOW_CAREER_SHIELD_BETA && view === 'shield' ? 'max-w-4xl' : 'max-w-7xl'}`}
+        >
           {error ? (
             <div
               role="alert"
@@ -1804,32 +2124,46 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm font-semibold text-accent">Premium activated</p>
                 <p className="mt-1 text-sm text-textSecondary">
-                  Your full transition plan is unlocked. Open your interactive roadmap or review saved
-                  analyses in History.
+                  {SHOW_CAREER_SHIELD_BETA
+                    ? 'Your full transition plan is unlocked. Open your interactive roadmap or review saved analyses in History.'
+                    : 'Your premium insights are unlocked. Run a new analysis or review saved results in History.'}
                 </p>
               </div>
-              <Link
-                href="/dashboard/roadmap"
-                className="btn-primary inline-flex shrink-0 items-center justify-center gap-2"
-              >
-                <MapIcon className="h-4 w-4" aria-hidden />
-                View Your Roadmap
-              </Link>
+              {SHOW_CAREER_SHIELD_BETA ? (
+                <Link
+                  href="/dashboard/roadmap"
+                  className="btn-primary inline-flex shrink-0 items-center justify-center gap-2"
+                >
+                  <MapIcon className="h-4 w-4" aria-hidden />
+                  View Your Roadmap
+                </Link>
+              ) : null}
             </div>
           ) : null}
 
           {loading ? (
             <DashboardSkeleton />
+          ) : view === 'transitionPath' ? (
+            <TransitionPathComingSoonView
+              currentRole={currentRole}
+              onBack={() => {
+                setView('shield')
+                setMatcherTab('analysis')
+              }}
+            />
           ) : view === 'shield' ? (
             <ShieldView
               userId={userId}
               fullName={fullName}
               jobRole={currentRole}
               isPremium={isPremium}
+              matcherPaidAccess={matcherPaidAccess}
               recentScans={recentScans}
               onScanComplete={refreshScans}
               onPremiumStatusChange={handlePremiumStatusChange}
               premiumRefreshToken={premiumRefreshToken}
+              shieldTab={matcherTab}
+              onShieldTabChange={setMatcherTab}
             />
           ) : (
             <ProfileView
@@ -1848,6 +2182,14 @@ export default function DashboardPage() {
               onSubmit={handleSubmit}
               onPremiumStatusChange={handlePremiumStatusChange}
               premiumRefreshToken={premiumRefreshToken}
+              onBackToMatcher={
+                !SHOW_CAREER_SHIELD_BETA
+                  ? () => {
+                      setView('shield')
+                      setMatcherTab('analysis')
+                    }
+                  : undefined
+              }
             />
           )}
         </div>

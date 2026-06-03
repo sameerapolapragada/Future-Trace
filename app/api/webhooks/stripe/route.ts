@@ -1,3 +1,5 @@
+import { activateMatcherPremium, incrementScanTokenBalance } from '@/lib/matcherProfileSelect'
+import { activateMatcherPremium, incrementScanTokenBalance } from '@/lib/matcherProfileSelect'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
@@ -74,13 +76,24 @@ export async function POST(request: Request) {
       )
     }
 
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ is_premium: true })
-      .eq('id', userId)
+    const checkoutPlan = session.metadata?.checkoutPlan?.trim() || 'legacy_premium'
 
-    if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (checkoutPlan === 'single_scan') {
+      const { error: tokenError } = await incrementScanTokenBalance(supabase, userId)
+
+      if (tokenError) {
+        return NextResponse.json({ error: tokenError }, { status: 500 })
+      }
+
+      return NextResponse.json({ received: true }, { status: 200 })
+    }
+
+    const { error: activateError } = await activateMatcherPremium(supabase, userId, {
+      subscription: checkoutPlan === 'subscription',
+    })
+
+    if (activateError) {
+      return NextResponse.json({ error: activateError }, { status: 500 })
     }
 
     return NextResponse.json({ received: true }, { status: 200 })

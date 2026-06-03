@@ -1,5 +1,6 @@
 'use client'
 
+import HorizonMenuLines from '@/components/HorizonMenuLines'
 import { useHomeRightPanel } from '@/components/home/HomeRightPanelContext'
 import { BookOpen, Briefcase, Cpu, Layers, Sparkles, X } from 'lucide-react'
 import Link from 'next/link'
@@ -17,16 +18,6 @@ const SECTION_NAV: NavItem[] = [
   { label: 'Jobs Affected by AI Evolution', icon: Briefcase, href: '/jobs-affected-by-ai' },
   { label: 'What Comes Next', icon: Sparkles, href: '/what-comes-next' },
 ]
-
-function MenuLines({ className = '' }: { className?: string }) {
-  return (
-    <span className={`flex w-5 flex-col gap-1.5 ${className}`} aria-hidden>
-      <span className="block h-0.5 w-full rounded-full bg-white" />
-      <span className="block h-0.5 w-full rounded-full bg-white" />
-      <span className="block h-0.5 w-full rounded-full bg-white" />
-    </span>
-  )
-}
 
 export default function HomeRightPanel() {
   const { isOpen, openPanel, closePanel } = useHomeRightPanel()
@@ -104,7 +95,7 @@ export default function HomeRightPanel() {
         aria-expanded={isOpen}
         aria-controls="home-right-panel"
       >
-        <MenuLines />
+        <HorizonMenuLines />
       </button>
     </>
   )

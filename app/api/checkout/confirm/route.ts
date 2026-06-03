@@ -1,3 +1,4 @@
+import { activateMatcherPremium, incrementScanTokenBalance } from '@/lib/matcherProfileSelect'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
@@ -59,19 +60,30 @@ export async function POST(request: Request) {
     }
 
     const admin = createAdminClient()
-    const { data: profile, error: updateError } = await admin
-      .from('profiles')
-      .update({ is_premium: true })
-      .eq('id', user.id)
-      .select('is_premium')
-      .single()
+    const checkoutPlan = session.metadata?.checkoutPlan?.trim() || 'legacy_premium'
 
-    if (updateError) {
-      console.error('[checkout/confirm] Premium activation failed:', updateError.message)
-      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    if (checkoutPlan === 'single_scan') {
+      const { tokenBalance, error: tokenError } = await incrementScanTokenBalance(admin, user.id)
+
+      if (tokenError) {
+        return NextResponse.json({ error: tokenError }, { status: 500 })
+      }
+
+      return NextResponse.json({ tokenBalance })
     }
 
-    return NextResponse.json({ isPremium: profile?.is_premium === true })
+    const { isPremium, tokenBalance, error: activateError } = await activateMatcherPremium(
+      admin,
+      user.id,
+      { subscription: checkoutPlan === 'subscription' },
+    )
+
+    if (activateError) {
+      console.error('[checkout/confirm] Premium activation failed:', activateError)
+      return NextResponse.json({ error: activateError }, { status: 500 })
+    }
+
+    return NextResponse.json({ isPremium, tokenBalance })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to confirm checkout'
     console.error('[checkout/confirm]', message)

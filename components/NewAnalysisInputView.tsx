@@ -1,6 +1,7 @@
 'use client'
 
 import { formatJobTitle } from '@/lib/formatJobTitle'
+import { MATCHER_SUBMIT_LABEL } from '@/lib/matcherCopy'
 import ScanBalanceBadge, { isScanUploadLocked } from '@/components/ScanBalanceBadge'
 import type { ScanBalanceResponse } from '@/lib/scanLimits'
 import { Briefcase, FileText, TrendingUp, Upload, Zap } from 'lucide-react'
@@ -56,6 +57,7 @@ type NewAnalysisInputViewProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   hasUploadedFile: boolean
   scanBalanceRefreshToken?: number
+  submitButtonLabel?: string
 }
 
 export default function NewAnalysisInputView({
@@ -78,6 +80,7 @@ export default function NewAnalysisInputView({
   onSubmit,
   hasUploadedFile,
   scanBalanceRefreshToken = 0,
+  submitButtonLabel = MATCHER_SUBMIT_LABEL,
 }: NewAnalysisInputViewProps) {
   const [scanBalance, setScanBalance] = useState<ScanBalanceResponse | null>(null)
   const uploadLocked = isScanUploadLocked(scanBalance)
@@ -227,7 +230,7 @@ export default function NewAnalysisInputView({
 
         <button type="submit" disabled={uploadLocked} className="btn-primary w-full gap-2 py-3.5">
           <Zap className="h-4 w-4" aria-hidden />
-          Generate My Transition Roadmap
+          {submitButtonLabel}
         </button>
       </form>
 

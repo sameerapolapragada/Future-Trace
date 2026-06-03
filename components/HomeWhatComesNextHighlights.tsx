@@ -1,4 +1,5 @@
 import { trustChallengeBullets } from '@/data/whatComesNext'
+import { MATCHER_SUBMIT_LABEL } from '@/lib/matcherCopy'
 import { ChevronRight, Shield } from 'lucide-react'
 import Link from 'next/link'
 
@@ -39,7 +40,7 @@ export default function HomeWhatComesNextHighlights() {
           skill set.
         </p>
         <Link href="/auth" className="btn-primary mt-4 inline-flex items-center gap-1 px-5 py-2.5">
-          Get Your Analysis
+          {MATCHER_SUBMIT_LABEL}
           <ChevronRight className="h-4 w-4" aria-hidden />
         </Link>
       </div>
