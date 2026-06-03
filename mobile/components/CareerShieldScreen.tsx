@@ -1,7 +1,7 @@
 import { horizon } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { persistScanAfterAnalysis, runMobileMatcher } from '@/lib/scanHistory'
+import { persistScanAfterAnalysis, runMobileMatcher, summarizeMatcherGaps } from '@/lib/scanHistory'
 import History from '@/src/screens/History'
 import { useState } from 'react'
 import {
@@ -123,6 +123,7 @@ export default function CareerShieldScreen() {
         currentRole,
         targetRole: trimmedTarget,
         calculatedRiskScore: result.market_risk_score,
+        gapsSummary: summarizeMatcherGaps(result),
       })
       setHistoryRefreshKey((key) => key + 1)
 

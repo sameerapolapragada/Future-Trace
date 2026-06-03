@@ -71,6 +71,27 @@ Also add your site URL for web reset flows if not already set.
 | Career Shield history | `user_resume_scans` via `/api/mobile/matcher` + `/api/mobile/scans` |
 | Notification prefs (mobile) | Local device storage only (not in DB yet) |
 
+## Test without Gemini API costs
+
+Add to `.env.local` (repo root):
+
+```bash
+ENABLE_MOCK_AI=true
+```
+
+When enabled, `/api/mobile/matcher`:
+
+- Waits **1.5s** (simulated network latency for loading UI tests)
+- Returns schema-valid mock JSON (no Gemini charges)
+- Runs the **same** auth, `user_resume_scans` insert, and optional `token_balance` decrement as production
+- Response shape is identical to live Gemini — mobile cannot tell the difference
+
+Target role **AI Risk Manager** returns a low **18%** risk score with governance-focused pivot roles.
+
+Optional request body flag: `"use_one_time_token": true` consumes one `profiles.token_balance` credit (non-premium users).
+
+When ready for live scoring: set `ENABLE_MOCK_AI=false` (or remove it), add `GEMINI_API_KEY`, restart Next.js.
+
 ## Day-to-day workflow
 
 ### Web developer (Web-Dev branch)

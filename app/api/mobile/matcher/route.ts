@@ -1,4 +1,11 @@
 import { generateMobileMatcherWithGemini } from '@/lib/mobileMatcher'
+import {
+  delayMs,
+  generateMobileMatcherMock,
+  isMockAiEnabled,
+  mockAiLatencyMs,
+} from '@/lib/mobileMatcherMock'
+import { persistMatcherScan } from '@/lib/mobileMatcherPersist'
 import { formatJobTitle } from '@/lib/formatJobTitle'
 import { createBearerClient, extractBearerToken } from '@/lib/supabase/bearer'
 import type { MobileMatcherResult } from '@/types/mobileMatcher'
@@ -10,12 +17,21 @@ type MobileMatcherRequestBody = {
   current_role?: string
   target_role?: string
   resume_text?: string
+  /** When true, consumes one credit from profiles.token_balance (non-premium users). */
+  use_one_time_token?: boolean
 }
 
-function summarizeGaps(result: MobileMatcherResult): string | null {
-  const skills = result.pivot_roles.flatMap((role) => role.skills_missing).filter(Boolean)
-  if (skills.length === 0) return null
-  return [...new Set(skills)].slice(0, 6).join(', ')
+async function runMatcher(context: {
+  currentRole: string
+  targetRole: string
+  resumeExcerpt?: string
+}): Promise<MobileMatcherResult> {
+  if (isMockAiEnabled()) {
+    await delayMs(mockAiLatencyMs())
+    return generateMobileMatcherMock(context)
+  }
+
+  return generateMobileMatcherWithGemini(context)
 }
 
 export async function POST(request: Request) {
@@ -30,6 +46,7 @@ export async function POST(request: Request) {
   const currentRole = formatJobTitle(String(body.current_role ?? ''))
   const targetRole = formatJobTitle(String(body.target_role ?? ''))
   const resumeText = String(body.resume_text ?? '').trim()
+  const useOneTimeToken = body.use_one_time_token === true
 
   if (!currentRole) {
     return NextResponse.json({ error: 'current_role is required.' }, { status: 400 })
@@ -46,36 +63,40 @@ export async function POST(request: Request) {
     )
   }
 
+  const accessToken = extractBearerToken(request)
+  if (!accessToken) {
+    return NextResponse.json({ error: 'Authorization required.' }, { status: 401 })
+  }
+
+  const supabase = createBearerClient(accessToken)
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return NextResponse.json({ error: 'Invalid or expired session.' }, { status: 401 })
+  }
+
   try {
-    const result = await generateMobileMatcherWithGemini({
+    const result = await runMatcher({
       currentRole,
       targetRole,
       resumeExcerpt: resumeText || undefined,
     })
 
-    const accessToken = extractBearerToken(request)
-    if (accessToken) {
-      const supabase = createBearerClient(accessToken)
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    const persistResult = await persistMatcherScan({
+      supabase,
+      userId: user.id,
+      currentRole,
+      targetRole,
+      resumeText,
+      result,
+      useOneTimeToken,
+    })
 
-      if (user) {
-        const { error: insertError } = await supabase.from('user_resume_scans').insert({
-          user_id: user.id,
-          current_role_input: currentRole,
-          target_role_input: targetRole,
-          calculated_risk_score: result.market_risk_score,
-          resume_excerpt: resumeText ? resumeText.slice(0, 5000) : null,
-          tier: 'free',
-          gaps_summary: summarizeGaps(result),
-          matcher_payload: result,
-        })
-
-        if (insertError) {
-          console.error('[mobile/matcher] scan insert failed:', insertError.message)
-        }
-      }
+    if (!persistResult.ok) {
+      return NextResponse.json({ error: persistResult.error }, { status: persistResult.status })
     }
 
     return NextResponse.json(result)

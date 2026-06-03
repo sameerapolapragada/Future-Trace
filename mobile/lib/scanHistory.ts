@@ -1,7 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import type { MobileMatcherResult } from '@/types/mobileMatcher'
 import { apiFetch, getSupabaseAccessToken } from './apiClient'
 
 const LOCAL_HISTORY_KEY = '@future-trace/scan-history'
+
+export type MobileMatcherApiResponse = MobileMatcherResult
 
 export type UserResumeScanRecord = {
   id: string
@@ -98,7 +101,7 @@ export async function runMobileMatcher(input: {
   currentRole: string
   targetRole: string
   resumeText: string
-}): Promise<{ market_risk_score: number; risk_rationale: string }> {
+}): Promise<MobileMatcherApiResponse> {
   const response = await apiFetch('/api/mobile/matcher', {
     method: 'POST',
     body: JSON.stringify({
@@ -108,11 +111,7 @@ export async function runMobileMatcher(input: {
     }),
   })
 
-  const payload = (await response.json()) as {
-    market_risk_score?: number
-    risk_rationale?: string
-    error?: string
-  }
+  const payload = (await response.json()) as MobileMatcherApiResponse & { error?: string }
 
   if (!response.ok) {
     throw new Error(payload.error ?? 'Analysis request failed.')
@@ -122,8 +121,11 @@ export async function runMobileMatcher(input: {
     throw new Error('Analysis response was missing a risk score.')
   }
 
-  return {
-    market_risk_score: payload.market_risk_score,
-    risk_rationale: payload.risk_rationale ?? '',
-  }
+  return payload
+}
+
+export function summarizeMatcherGaps(result: MobileMatcherApiResponse): string | null {
+  const skills = result.pivot_roles?.flatMap((role) => role.skills_missing).filter(Boolean) ?? []
+  if (skills.length === 0) return null
+  return [...new Set(skills)].slice(0, 6).join(', ')
 }
