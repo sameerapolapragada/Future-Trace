@@ -45,7 +45,7 @@ export function MarketingHomeScreen({
 
       <PrimaryButton
         label="Check your AI Career Match"
-        onPress={() => router.push(careerMatchHref)}
+        onPress={() => router.navigate(careerMatchHref)}
         rightIcon={<Ionicons name="chevron-forward" size={16} color={horizon.buttonText} />}
         style={styles.careerMatchButton}
       />

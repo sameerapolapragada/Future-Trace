@@ -129,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hydrateFromSession = useCallback(async (session: Session | null) => {
     if (!session?.user) {
-      setUser(null)
       return
     }
 
@@ -161,7 +160,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } = await supabase.auth.getSession()
 
       if (!cancelled) {
-        await hydrateFromSession(session)
+        if (session?.user) {
+          await hydrateFromSession(session)
+        } else {
+          setUser(null)
+        }
         setIsLoading(false)
       }
     }
@@ -170,8 +173,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      void hydrateFromSession(session)
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        return
+      }
+
+      if (session?.user) {
+        void hydrateFromSession(session)
+      }
     })
 
     const linkSub = Linking.addEventListener('url', ({ url }) => {

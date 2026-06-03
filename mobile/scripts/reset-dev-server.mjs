@@ -1,27 +1,16 @@
 #!/usr/bin/env node
-import { execSync } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { freeMetroPorts, METRO_PORT } from './free-metro-ports.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 await import('./ensure-logo.mjs')
 
-try {
-  const pids = execSync('lsof -ti:8081 2>/dev/null || true', { encoding: 'utf8' }).trim()
-  if (pids) {
-    for (const pid of pids.split('\n').filter(Boolean)) {
-      try {
-        process.kill(Number(pid), 'SIGKILL')
-      } catch {
-        /* already exited */
-      }
-    }
-    console.log('Stopped process(es) on port 8081')
-  }
-} catch {
-  /* lsof unavailable */
+const stopped = freeMetroPorts()
+if (stopped.length > 0) {
+  console.log(`Stopped ${stopped.length} stale Metro process(es) on ports 8081–8083`)
 }
 
 for (const dir of ['.expo', join('node_modules', '.cache')]) {

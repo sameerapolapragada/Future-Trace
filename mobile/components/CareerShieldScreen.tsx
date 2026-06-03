@@ -127,14 +127,15 @@ export default function CareerShieldScreen() {
       })
       setHistoryRefreshKey((key) => key + 1)
 
-      router.push({
-        pathname: '/results',
+      router.replace({
+        pathname: '/(app)/results',
         params: {
           currentRole,
           targetRole: trimmedTarget,
           riskIndex: String(result.market_risk_score),
         },
       })
+      return
     } catch (error) {
       Alert.alert(
         'Analysis failed',

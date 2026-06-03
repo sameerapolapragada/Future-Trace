@@ -1,11 +1,7 @@
-const DEFAULT_API_URL = 'http://localhost:3000'
+import { apiReachabilityHint, resolveApiBaseUrl } from './resolveApiBaseUrl'
 
 export function getApiBaseUrl(): string {
-  const configured = process.env.EXPO_PUBLIC_API_URL?.trim()
-  if (configured) {
-    return configured.replace(/\/$/, '')
-  }
-  return DEFAULT_API_URL
+  return resolveApiBaseUrl()
 }
 
 export async function getSupabaseAccessToken(): Promise<string | null> {
@@ -34,5 +30,13 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
     headers.set('Content-Type', 'application/json')
   }
 
-  return fetch(url, { ...init, headers })
+  try {
+    return await fetch(url, { ...init, headers })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Network request failed'
+    if (message.toLowerCase().includes('network request failed')) {
+      throw new Error(`Network request failed for ${url}. ${apiReachabilityHint()}`)
+    }
+    throw error
+  }
 }
