@@ -21,7 +21,7 @@ export default function ForgotPasswordScreen() {
       setSent(true)
       Alert.alert(
         'Check your email',
-        'If an account exists for this address, password reset instructions will be sent. (Mock flow — no email sent yet.)'
+        'If an account exists for this address, we sent password reset instructions.'
       )
     } catch (error) {
       Alert.alert('Request failed', error instanceof Error ? error.message : 'Please try again.')
@@ -45,8 +45,8 @@ export default function ForgotPasswordScreen() {
       }
     >
       <Text style={styles.helper}>
-        Enter the email linked to your account. We will send reset instructions when backend auth
-        is connected.
+        Enter the email linked to your Future Trace account. We will send a reset link that opens
+        this app.
       </Text>
 
       <GradientField
@@ -68,7 +68,7 @@ export default function ForgotPasswordScreen() {
       {sent ? (
         <View style={styles.successBox}>
           <Text style={styles.successText}>
-            Mock reset requested for {email.trim().toLowerCase()}.
+            Reset link requested for {email.trim().toLowerCase()}.
           </Text>
         </View>
       ) : null}

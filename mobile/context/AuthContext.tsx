@@ -1,10 +1,25 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js'
+import * as Linking from 'expo-linking'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
 import type { PlanId } from '../data/plans'
+import { applySupabaseAuthUrl } from '../lib/authSessionFromUrl'
+import { getPasswordResetRedirectUrl } from '../lib/authRedirect'
+import { fetchSharedProfile, updateSharedProfile } from '../lib/profile'
+import { getSupabase, isSupabaseConfigured } from '../lib/supabase'
 
-const PROFILE_STORAGE_KEY = '@future-trace/user-profile'
+const PREFS_STORAGE_KEY = '@future-trace/user-prefs'
 
 export type User = {
+  id: string
   email: string
   displayName?: string
   plan: PlanId
@@ -15,14 +30,9 @@ export type User = {
   lastScanAt?: string | null
 }
 
-type StoredProfile = {
-  email: string
-  displayName?: string
-  plan: PlanId
-  currentRole?: string
+type LocalPrefs = {
   emailNotifications?: boolean
   weeklyReports?: boolean
-  memberSince?: string
   lastScanAt?: string | null
 }
 
@@ -30,9 +40,8 @@ type AuthContextValue = {
   user: User | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, displayName?: string) => Promise<void>
-  continueAsGuest: () => void
-  signOut: () => void
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ needsEmailVerification: boolean }>
+  signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   updateDisplayName: (displayName: string) => Promise<void>
   updateProfileSettings: (updates: ProfileSettingsUpdate) => Promise<void>
@@ -59,7 +68,7 @@ function validatePassword(password: string) {
   }
 }
 
-function defaultDisplayName(email: string, explicit?: string) {
+function defaultDisplayName(email: string, explicit?: string | null) {
   const trimmed = explicit?.trim()
   if (trimmed) return trimmed
   const local = email.split('@')[0]?.trim()
@@ -67,43 +76,50 @@ function defaultDisplayName(email: string, explicit?: string) {
   return local.charAt(0).toUpperCase() + local.slice(1)
 }
 
-async function readStoredProfile(): Promise<StoredProfile | null> {
+function requireSupabaseAuth() {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      'Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to mobile/.env (same dev branch keys as the web app).'
+    )
+  }
+}
+
+async function readLocalPrefs(userId: string): Promise<LocalPrefs> {
   try {
-    const raw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as StoredProfile
+    const raw = await AsyncStorage.getItem(PREFS_STORAGE_KEY)
+    if (!raw) return {}
+    const parsed = JSON.parse(raw) as Record<string, LocalPrefs>
+    return parsed[userId] ?? {}
   } catch {
-    return null
+    return {}
   }
 }
 
-async function writeStoredProfile(profile: StoredProfile) {
-  await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+async function writeLocalPrefs(userId: string, prefs: LocalPrefs) {
+  const raw = await AsyncStorage.getItem(PREFS_STORAGE_KEY)
+  const parsed = raw ? (JSON.parse(raw) as Record<string, LocalPrefs>) : {}
+  parsed[userId] = prefs
+  await AsyncStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(parsed))
 }
 
-function buildUser(email: string, profile: StoredProfile, displayNameOverride?: string): User {
+async function mapSupabaseUser(
+  supabaseUser: SupabaseUser,
+  session?: Session | null
+): Promise<User> {
+  const profile = await fetchSharedProfile(supabaseUser.id)
+  const prefs = await readLocalPrefs(supabaseUser.id)
+  const email = supabaseUser.email ?? profile?.email ?? ''
+
   return {
+    id: supabaseUser.id,
     email,
-    plan: profile.plan === 'pro' ? 'pro' : 'free',
-    displayName: defaultDisplayName(email, displayNameOverride ?? profile.displayName),
-    currentRole: profile.currentRole,
-    emailNotifications: profile.emailNotifications ?? true,
-    weeklyReports: profile.weeklyReports ?? false,
-    memberSince: profile.memberSince,
-    lastScanAt: profile.lastScanAt ?? null,
-  }
-}
-
-function userToStored(user: User): StoredProfile {
-  return {
-    email: user.email,
-    displayName: user.displayName,
-    plan: user.plan,
-    currentRole: user.currentRole,
-    emailNotifications: user.emailNotifications,
-    weeklyReports: user.weeklyReports,
-    memberSince: user.memberSince,
-    lastScanAt: user.lastScanAt,
+    displayName: defaultDisplayName(email, profile?.full_name ?? supabaseUser.user_metadata?.full_name),
+    plan: profile?.is_premium ? 'pro' : 'free',
+    currentRole: profile?.job_role ?? undefined,
+    emailNotifications: prefs.emailNotifications ?? true,
+    weeklyReports: prefs.weeklyReports ?? false,
+    memberSince: supabaseUser.created_at ?? session?.user.created_at,
+    lastScanAt: prefs.lastScanAt ?? null,
   }
 }
 
@@ -111,105 +127,145 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    let cancelled = false
-
-    async function hydrate() {
-      const stored = await readStoredProfile()
-      if (cancelled) return
-
-      if (stored?.email) {
-        setUser(buildUser(stored.email, stored))
-      }
-      setIsLoading(false)
+  const hydrateFromSession = useCallback(async (session: Session | null) => {
+    if (!session?.user) {
+      setUser(null)
+      return
     }
 
-    hydrate()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  const persistUser = useCallback(async (next: User) => {
-    await writeStoredProfile(userToStored(next))
+    const next = await mapSupabaseUser(session.user, session)
     setUser(next)
   }, [])
 
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const supabase = getSupabase()
+
+    async function bootstrap() {
+      try {
+        const initialUrl = await Linking.getInitialURL()
+        if (initialUrl) {
+          await applySupabaseAuthUrl(initialUrl)
+        }
+      } catch {
+        // Deep link parse errors should not block startup.
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!cancelled) {
+        await hydrateFromSession(session)
+        setIsLoading(false)
+      }
+    }
+
+    void bootstrap()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void hydrateFromSession(session)
+    })
+
+    const linkSub = Linking.addEventListener('url', ({ url }) => {
+      void applySupabaseAuthUrl(url).catch(() => undefined)
+    })
+
+    return () => {
+      cancelled = true
+      subscription.unsubscribe()
+      linkSub.remove()
+    }
+  }, [hydrateFromSession])
+
   const signIn = useCallback(
     async (email: string, password: string) => {
+      requireSupabaseAuth()
       validateEmail(email)
       validatePassword(password)
-      const normalized = email.trim().toLowerCase()
-      const stored = await readStoredProfile()
-      const next = buildUser(
-        normalized,
-        {
-          email: normalized,
-          ...(stored?.email === normalized ? stored : {}),
-          plan: stored?.plan ?? 'free',
-          memberSince: stored?.memberSince ?? new Date().toISOString(),
-        },
-        stored?.email === normalized ? stored.displayName : undefined
-      )
-      await persistUser(next)
+
+      const { data, error } = await getSupabase().auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      await hydrateFromSession(data.session)
     },
-    [persistUser]
+    [hydrateFromSession]
   )
 
   const signUp = useCallback(
     async (email: string, password: string, displayName?: string) => {
+      requireSupabaseAuth()
       validateEmail(email)
       validatePassword(password)
+
       const normalized = email.trim().toLowerCase()
-      const next = buildUser(
-        normalized,
-        {
-          email: normalized,
-          displayName: displayName?.trim(),
-          plan: 'free',
-          memberSince: new Date().toISOString(),
+      const { data, error } = await getSupabase().auth.signUp({
+        email: normalized,
+        password,
+        options: {
+          data: { full_name: displayName?.trim() || null },
         },
-        displayName?.trim()
-      )
-      await persistUser(next)
+      })
+
+      if (error) {
+        throw new Error(error.message)
+      }
+
+      if (data.session?.user) {
+        await hydrateFromSession(data.session)
+        return { needsEmailVerification: false }
+      }
+
+      return { needsEmailVerification: true }
     },
-    [persistUser]
+    [hydrateFromSession]
   )
 
-  const continueAsGuest = useCallback(() => {
-    const next: User = {
-      email: 'guest@futuretrace.local',
-      displayName: 'Guest',
-      plan: 'free',
-      emailNotifications: true,
-      weeklyReports: false,
-      memberSince: new Date().toISOString(),
-      lastScanAt: null,
-    }
-    void persistUser(next)
-  }, [persistUser])
-
   const signOut = useCallback(async () => {
-    await AsyncStorage.removeItem(PROFILE_STORAGE_KEY)
+    if (isSupabaseConfigured) {
+      await getSupabase().auth.signOut()
+    }
     setUser(null)
   }, [])
 
   const resetPassword = useCallback(async (email: string) => {
+    requireSupabaseAuth()
     validateEmail(email)
+
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: getPasswordResetRedirectUrl(),
+    })
+
+    if (error) {
+      throw new Error(error.message)
+    }
   }, [])
 
   const updateDisplayName = useCallback(
     async (displayName: string) => {
+      if (!user) return
       const trimmed = displayName.trim()
       if (!trimmed) {
         throw new Error('Enter a display name.')
       }
-      if (!user) return
 
-      const next: User = { ...user, displayName: trimmed }
-      await persistUser(next)
+      await updateSharedProfile(user.id, { full_name: trimmed })
+      setUser({ ...user, displayName: trimmed })
     },
-    [persistUser, user]
+    [user]
   )
 
   const updateProfileSettings = useCallback(
@@ -221,7 +277,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error('Enter a display name.')
       }
 
-      const next: User = {
+      if (trimmedName !== undefined || updates.currentRole !== undefined) {
+        await updateSharedProfile(user.id, {
+          ...(trimmedName !== undefined ? { full_name: trimmedName } : {}),
+          ...(updates.currentRole !== undefined
+            ? { job_role: updates.currentRole.trim() || null }
+            : {}),
+        })
+      }
+
+      const prefs = await readLocalPrefs(user.id)
+      const nextPrefs: LocalPrefs = {
+        ...prefs,
+        ...(updates.emailNotifications !== undefined
+          ? { emailNotifications: updates.emailNotifications }
+          : {}),
+        ...(updates.weeklyReports !== undefined ? { weeklyReports: updates.weeklyReports } : {}),
+      }
+      await writeLocalPrefs(user.id, nextPrefs)
+
+      setUser({
         ...user,
         ...(trimmedName !== undefined ? { displayName: trimmedName } : {}),
         ...(updates.currentRole !== undefined ? { currentRole: updates.currentRole } : {}),
@@ -229,10 +304,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ? { emailNotifications: updates.emailNotifications }
           : {}),
         ...(updates.weeklyReports !== undefined ? { weeklyReports: updates.weeklyReports } : {}),
-      }
-      await persistUser(next)
+      })
     },
-    [persistUser, user]
+    [user]
   )
 
   const value = useMemo(
@@ -241,13 +315,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       signIn,
       signUp,
-      continueAsGuest,
       signOut,
       resetPassword,
       updateDisplayName,
       updateProfileSettings,
     }),
-    [user, isLoading, signIn, signUp, continueAsGuest, signOut, resetPassword, updateDisplayName, updateProfileSettings]
+    [user, isLoading, signIn, signUp, signOut, resetPassword, updateDisplayName, updateProfileSettings]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

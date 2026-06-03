@@ -46,10 +46,12 @@ Branch names can differ in case (`Dev` vs `dev`); Supabase maps Git branches to 
 
 ### 4. Mobile env for dev
 
-While on GitHub `Dev`, point the app at the **dev** Supabase branch API keys:
+While on GitHub `Dev`, point the app at the **dev** Supabase branch API keys (same as web):
 
 - Dashboard → **Branches** → **dev** → **Settings** → **API**  
-- Put URL + anon key in `mobile/.env`  
+- Put URL + anon key in `mobile/.env` as `EXPO_PUBLIC_SUPABASE_*`  
+- Full guide: [docs/SHARED_SUPABASE.md](../docs/SHARED_SUPABASE.md)  
+- Add `futuretrace://reset-password` to Auth redirect URLs for mobile password reset  
 
 ---
 

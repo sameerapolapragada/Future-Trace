@@ -1,14 +1,26 @@
 # Future Trace — Mobile (iOS & Android)
 
-Expo app on the **`Dev`** git branch. Uses the **same Supabase project and schema** as the web app.
+Expo app on the **`Dev`** git branch. Uses the **same Supabase dev branch and schema** as the web app (`Web-Dev` or your web branch).
+
+**Shared setup:** [docs/SHARED_SUPABASE.md](../docs/SHARED_SUPABASE.md)
 
 ## Setup
 
 ```bash
 cd mobile
 cp .env.example .env
+# Paste the same dev-branch URL + anon key as web .env.local (EXPO_PUBLIC_* prefix)
+# Set EXPO_PUBLIC_API_URL so your phone can reach Next.js (npm run dev at repo root)
 npm install
 ```
+
+## Auth
+
+Mobile uses **real Supabase Auth** — the same accounts as the web app. After configuring `mobile/.env`:
+
+1. Sign up / sign in from the app (Shield tab or auth screens).
+2. Scan history syncs to `user_resume_scans` when signed in.
+3. Add `futuretrace://reset-password` to Supabase Auth redirect URLs for password reset.
 
 ## Run on your Android phone (recommended — no Expo Go)
 

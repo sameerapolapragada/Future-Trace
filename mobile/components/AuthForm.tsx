@@ -66,7 +66,16 @@ export function AuthForm({ initialMode = 'signin' }: AuthFormProps) {
     try {
       setLoading(true)
       if (isSignUp) {
-        await signUp(email, password, displayName)
+        const result = await signUp(email, password, displayName)
+        if (result.needsEmailVerification) {
+          Alert.alert(
+            'Verify your email',
+            'Account created. Check your inbox for a verification link, then sign in to continue.'
+          )
+          setMode('signin')
+          setPassword('')
+          return
+        }
       } else {
         await signIn(email, password)
       }

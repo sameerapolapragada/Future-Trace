@@ -166,9 +166,8 @@ export function ProfileSettingsScreen() {
     return null
   }
 
-  const isGuest = user.email.endsWith('@futuretrace.local')
   const isPremium = user.plan === 'pro'
-  const emailDisplay = isGuest ? 'Not linked — sign in to add your email' : user.email
+  const emailDisplay = user.email
 
   const handleSave = async () => {
     try {
