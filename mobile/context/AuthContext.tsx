@@ -8,12 +8,22 @@ export type User = {
   email: string
   displayName?: string
   plan: PlanId
+  currentRole?: string
+  emailNotifications: boolean
+  weeklyReports: boolean
+  memberSince?: string
+  lastScanAt?: string | null
 }
 
 type StoredProfile = {
   email: string
   displayName?: string
   plan: PlanId
+  currentRole?: string
+  emailNotifications?: boolean
+  weeklyReports?: boolean
+  memberSince?: string
+  lastScanAt?: string | null
 }
 
 type AuthContextValue = {
@@ -25,6 +35,14 @@ type AuthContextValue = {
   signOut: () => void
   resetPassword: (email: string) => Promise<void>
   updateDisplayName: (displayName: string) => Promise<void>
+  updateProfileSettings: (updates: ProfileSettingsUpdate) => Promise<void>
+}
+
+export type ProfileSettingsUpdate = {
+  displayName?: string
+  currentRole?: string
+  emailNotifications?: boolean
+  weeklyReports?: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -63,11 +81,16 @@ async function writeStoredProfile(profile: StoredProfile) {
   await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
 }
 
-function buildUser(email: string, profile: Pick<StoredProfile, 'displayName' | 'plan'>, displayNameOverride?: string): User {
+function buildUser(email: string, profile: StoredProfile, displayNameOverride?: string): User {
   return {
     email,
     plan: profile.plan === 'pro' ? 'pro' : 'free',
     displayName: defaultDisplayName(email, displayNameOverride ?? profile.displayName),
+    currentRole: profile.currentRole,
+    emailNotifications: profile.emailNotifications ?? true,
+    weeklyReports: profile.weeklyReports ?? false,
+    memberSince: profile.memberSince,
+    lastScanAt: profile.lastScanAt ?? null,
   }
 }
 
@@ -76,6 +99,11 @@ function userToStored(user: User): StoredProfile {
     email: user.email,
     displayName: user.displayName,
     plan: user.plan,
+    currentRole: user.currentRole,
+    emailNotifications: user.emailNotifications,
+    weeklyReports: user.weeklyReports,
+    memberSince: user.memberSince,
+    lastScanAt: user.lastScanAt,
   }
 }
 
@@ -115,7 +143,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const stored = await readStoredProfile()
       const next = buildUser(
         normalized,
-        { plan: stored?.plan ?? 'free', displayName: stored?.displayName },
+        {
+          email: normalized,
+          ...(stored?.email === normalized ? stored : {}),
+          plan: stored?.plan ?? 'free',
+          memberSince: stored?.memberSince ?? new Date().toISOString(),
+        },
         stored?.email === normalized ? stored.displayName : undefined
       )
       await persistUser(next)
@@ -130,7 +163,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const normalized = email.trim().toLowerCase()
       const next = buildUser(
         normalized,
-        { displayName: displayName?.trim(), plan: 'free' },
+        {
+          email: normalized,
+          displayName: displayName?.trim(),
+          plan: 'free',
+          memberSince: new Date().toISOString(),
+        },
         displayName?.trim()
       )
       await persistUser(next)
@@ -143,6 +181,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: 'guest@futuretrace.local',
       displayName: 'Guest',
       plan: 'free',
+      emailNotifications: true,
+      weeklyReports: false,
+      memberSince: new Date().toISOString(),
+      lastScanAt: null,
     }
     void persistUser(next)
   }, [persistUser])
@@ -170,6 +212,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persistUser, user]
   )
 
+  const updateProfileSettings = useCallback(
+    async (updates: ProfileSettingsUpdate) => {
+      if (!user) return
+
+      const trimmedName = updates.displayName?.trim()
+      if (updates.displayName !== undefined && !trimmedName) {
+        throw new Error('Enter a display name.')
+      }
+
+      const next: User = {
+        ...user,
+        ...(trimmedName !== undefined ? { displayName: trimmedName } : {}),
+        ...(updates.currentRole !== undefined ? { currentRole: updates.currentRole } : {}),
+        ...(updates.emailNotifications !== undefined
+          ? { emailNotifications: updates.emailNotifications }
+          : {}),
+        ...(updates.weeklyReports !== undefined ? { weeklyReports: updates.weeklyReports } : {}),
+      }
+      await persistUser(next)
+    },
+    [persistUser, user]
+  )
+
   const value = useMemo(
     () => ({
       user,
@@ -180,8 +245,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       resetPassword,
       updateDisplayName,
+      updateProfileSettings,
     }),
-    [user, isLoading, signIn, signUp, continueAsGuest, signOut, resetPassword, updateDisplayName]
+    [user, isLoading, signIn, signUp, continueAsGuest, signOut, resetPassword, updateDisplayName, updateProfileSettings]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useState, type ReactNode } from 'react'
+import { enableAndroidLayoutAnimation } from '@/lib/layoutAnimation'
 import {
   LayoutAnimation,
-  Platform,
   Pressable,
   StyleSheet,
-  UIManager,
   View,
   type StyleProp,
   type ViewStyle,
@@ -14,9 +13,7 @@ import {
 import { Text } from './AppText'
 import { colors } from '../theme/colors'
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
+enableAndroidLayoutAnimation()
 
 type CollapsibleMilestoneSectionProps = {
   title: string

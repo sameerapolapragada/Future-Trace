@@ -1,54 +1,60 @@
+import ExplorePageHeader from '@/components/ExplorePageHeader'
+import IndustryAdoptionWavesGrid from '@/components/IndustryAdoptionWavesGrid'
 import ExploreScreenBackground from '@/components/ExploreScreenBackground'
-import { industries } from '@/data/industries'
 import { horizon } from '@/theme/colors'
-import { StyleSheet, Text, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { Pressable, StyleSheet, Text } from 'react-native'
 
 export default function IndustryAdoptionWavesScreen() {
+  const router = useRouter()
+
   return (
-    <ExploreScreenBackground>
-      <Text style={styles.intro}>
-        How AI adoption is unfolding across major industries—from early automation to agentic
-        futures.
-      </Text>
-      {industries.map((industry) => (
-        <View key={industry.id} style={styles.card}>
-          <Text style={styles.name}>{industry.name}</Text>
-          <Text style={styles.sectionLabel}>CURRENT AI</Text>
-          {industry.currentAI.slice(0, 3).map((item) => (
-            <Text key={item} style={styles.bullet}>
-              • {item}
-            </Text>
-          ))}
-          <Text style={styles.sectionLabel}>AGENTIC FUTURE</Text>
-          {industry.agenticFuture.slice(0, 2).map((item) => (
-            <Text key={item} style={styles.bullet}>
-              • {item}
-            </Text>
-          ))}
-        </View>
-      ))}
+    <ExploreScreenBackground contentContainerStyle={styles.scrollContent}>
+      <ExplorePageHeader />
+
+      <Text style={styles.title}>Industry Adoption Waves</Text>
+      <Text style={styles.subtitle}>How industries adopted AI over time</Text>
+
+      <IndustryAdoptionWavesGrid />
+
+      <Pressable
+        style={styles.footerLink}
+        onPress={() => router.push('/(explore)/industry-analysis')}
+      >
+        <Text style={styles.footerLinkText}>Explore full industry analysis</Text>
+        <Ionicons name="chevron-forward" size={16} color={horizon.accent} />
+      </Pressable>
     </ExploreScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  intro: { fontSize: 15, lineHeight: 22, color: horizon.textSecondary, marginBottom: 16 },
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: horizon.borderMuted,
-    backgroundColor: horizon.surface,
-    padding: 14,
-    marginBottom: 12,
+  scrollContent: {
+    paddingBottom: 40,
   },
-  name: { fontSize: 18, fontWeight: '600', color: horizon.textPrimary },
-  sectionLabel: {
-    marginTop: 10,
-    marginBottom: 4,
-    fontSize: 10,
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: horizon.textPrimary,
+  },
+  subtitle: {
+    marginTop: 4,
+    marginBottom: 20,
+    fontSize: 14,
+    lineHeight: 20,
+    color: horizon.textSecondary,
+  },
+  footerLink: {
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  footerLinkText: {
+    fontSize: 14,
     fontWeight: '600',
-    letterSpacing: 1,
     color: horizon.accent,
   },
-  bullet: { marginLeft: 4, marginBottom: 2, fontSize: 12, color: horizon.textSecondary },
 })

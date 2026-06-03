@@ -1,14 +1,16 @@
-import { useFocusEffect } from 'expo-router'
+import { useFocusEffect, useRouter } from 'expo-router'
 import { useCallback, useRef } from 'react'
-import { Animated, Easing, Image, StyleSheet } from 'react-native'
+import { Animated, Easing, Image, Pressable, StyleSheet } from 'react-native'
+import { LOGO_SOURCE, logoHeightForWidth } from '../assets/images'
 
-const logo = require('../assets/future-trace-logo.png')
+const LOGO_DISPLAY_WIDTH = 200
 
 const SPRING_APPROACH = { friction: 7, tension: 42, useNativeDriver: true as const }
 const SPRING_SETTLE = { friction: 8, tension: 50, useNativeDriver: true as const }
 const APPROACH_MS = 880
 
 export function AuthLogoEntrance() {
+  const router = useRouter()
   const scale = useRef(new Animated.Value(0.12)).current
   const translateX = useRef(new Animated.Value(140)).current
   const translateY = useRef(new Animated.Value(-72)).current
@@ -64,26 +66,33 @@ export function AuthLogoEntrance() {
   })
 
   return (
-    <Animated.View
-      style={[
-        styles.wrap,
-        {
-          transform: [
-            { translateX },
-            { translateY },
-            { scale },
-            { rotate: rotateDeg },
-          ],
-        },
-      ]}
+    <Pressable
+      onPress={() => router.replace('/(explore)/')}
+      accessibilityRole="button"
+      accessibilityLabel="Go to home"
+      hitSlop={8}
     >
-      <Image
-        source={logo}
-        style={styles.logo}
-        resizeMode="contain"
-        accessibilityLabel="Future Trace logo"
-      />
-    </Animated.View>
+      <Animated.View
+        style={[
+          styles.wrap,
+          {
+            transform: [
+              { translateX },
+              { translateY },
+              { scale },
+              { rotate: rotateDeg },
+            ],
+          },
+        ]}
+      >
+        <Image
+          source={LOGO_SOURCE}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="Future Trace logo"
+        />
+      </Animated.View>
+    </Pressable>
   )
 }
 
@@ -94,8 +103,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logo: {
-    width: 220,
-    height: 120,
+    width: LOGO_DISPLAY_WIDTH,
+    height: logoHeightForWidth(LOGO_DISPLAY_WIDTH),
     backgroundColor: 'transparent',
   },
 })

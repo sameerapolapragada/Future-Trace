@@ -21,6 +21,7 @@ export default function AppLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="results" />
       <Stack.Screen
         name="milestone/[id]"
         options={{

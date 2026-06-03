@@ -13,6 +13,9 @@ export const horizon = {
   drawerGradientStart: '#FDBB2D',
   drawerGradientEnd: '#E85D04',
   drawerText: '#0F172A',
+  /** Gold → orange CTA gradient (matches web `btn-primary`). */
+  buttonGradient: ['#FDBB2D', '#E85D04'] as const,
+  buttonText: '#0F172A',
 } as const
 
 export const colors = {

@@ -6,10 +6,20 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "scheme": "futuretrace",
+    "assetBundlePatterns": [
+      "assets/**/*"
+    ],
+    "plugins": [
+      "expo-router",
+      "expo-dev-client"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.futuretrace.mobile"
     },
     "android": {
+      "package": "com.futuretrace.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -21,10 +31,11 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "futuretrace",
-    "plugins": ["expo-router"],
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "d1a4e6df-2757-4ce9-83ac-e61854c897d3"
+      },
+      "router": {}
     },
     "updates": {
       "enabled": false,

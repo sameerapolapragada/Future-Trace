@@ -13,7 +13,7 @@ export default function ExploreScreenBackground({
   contentContainerStyle,
 }: ExploreScreenBackgroundProps) {
   return (
-    <SafeAreaView style={styles.safe} edges={['bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, contentContainerStyle]}
@@ -28,5 +28,5 @@ export default function ExploreScreenBackground({
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: horizon.background },
   scroll: { flex: 1, backgroundColor: horizon.background },
-  content: { paddingHorizontal: 20, paddingBottom: 32 },
+  content: { paddingHorizontal: 16, paddingTop: 0, paddingBottom: 32 },
 })

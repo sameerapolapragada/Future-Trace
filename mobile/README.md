@@ -10,7 +10,21 @@ cp .env.example .env
 npm install
 ```
 
-## Run the app
+## Run on your Android phone (recommended — no Expo Go)
+
+Install your own dev app once, then live-reload while you code:
+
+**[DEV-ANDROID.md](./DEV-ANDROID.md)** — EAS APK + `npm run start:dev`
+
+Quick version:
+
+```bash
+cd mobile
+eas build --profile development --platform android   # once
+npm run start:dev                                   # daily
+```
+
+## Run the app (Expo Go — legacy)
 
 ### Simulator (recommended)
 
@@ -25,29 +39,50 @@ npm run start:clear
 npm run start:phone
 ```
 
-1. Wait for Metro and the **QR code**.
-2. Use the URL with your Mac’s **LAN IP** (e.g. `exp://192.168.1.x:8081`) — **not** `127.0.0.1`.
-3. Phone and Mac must be on the **same Wi‑Fi**. Turn off VPN if it still fails.
-4. Force-quit Expo Go, reopen, scan the **new** QR.
+The script prints your Mac’s LAN IP and sets `REACT_NATIVE_PACKAGER_HOSTNAME` so Expo Go does **not** try to load the bundle from `127.0.0.1`.
 
-### Tunnel (only if LAN does not work)
+1. Wait for Metro and the **QR code**.
+2. Confirm the URL is `exp://192.168.x.x:8081` (your LAN IP) — **not** `127.0.0.1`.
+3. On the phone, open **Safari** → `http://<that-same-ip>:8081`. If that fails, Expo Go cannot reach your Mac (guest Wi‑Fi, VPN, firewall, or router client isolation).
+4. Phone and Mac on the **same Wi‑Fi**; turn VPN off; force-quit Expo Go, then scan a **fresh** QR.
+
+### Android + USB (when Wi‑Fi blocks the phone)
 
 ```bash
+adb reverse tcp:8081 tcp:8081
+npm run start:localhost
+```
+
+Then scan the QR in Expo Go (localhost works over USB reverse).
+
+### Tunnel — Android / any network (LAN failed)
+
+See **[TUNNEL-ANDROID.md](./TUNNEL-ANDROID.md)** for full steps.
+
+```bash
+cd mobile
+# Add NGROK_AUTHTOKEN to .env (free from ngrok.com) — recommended
 npm run start:tunnel
 ```
 
-Requires `@expo/ngrok` (installed as a dev dependency). If you see:
+In **Expo Go → Enter URL manually**, paste the `exp://…` URL from the terminal.
 
-`CommandError: TypeError: Cannot read properties of undefined (reading 'body')`
-
-that means **Expo’s ngrok tunnel failed** (service limit, outage, or network block)—not your React code. Use **`npm run start:phone`** (LAN) or the **simulator** instead.
+Do **not** use `npx expo start --tunnel` (shared ngrok breaks with `reading 'body'`).
 
 ## Common errors
 
 | Message | What it means | Fix |
 |--------|----------------|-----|
-| `Failed to download remote update` | Phone can’t reach Metro | Same Wi‑Fi + `npm run start:phone`, or simulator |
-| `Cannot read properties of undefined (reading 'body')` | `--tunnel` / ngrok failed | Don’t use tunnel; use `start:phone` or simulator |
+| `Failed to download remote update` | Phone can’t reach Metro (wrong/stale URL) | See **Fix remote update** below |
+
+### Fix “Failed to download remote update”
+
+1. From `mobile/`: `npm run start:phone` (not `expo start --tunnel` unless you set `NGROK_AUTHTOKEN`)
+2. QR must be `exp://192.168.x.x:8081` — **not** `127.0.0.1` or an old `exp.direct` link
+3. **Safari on the phone** → `http://<same-ip>:8081` — if this doesn’t load, fix Wi‑Fi/firewall before Expo Go
+4. Force-quit Expo Go → **Enter URL manually** → `exp://<ip>:8081`
+5. While Metro runs: `npm run check:connection`
+| `Cannot read properties of undefined (reading 'body')` | Expo shared ngrok failed | Add `NGROK_AUTHTOKEN` to `.env` and `npm run start:tunnel`, or use `start:phone` |
 | Port 8081 in use | Old Metro still running | `npm run start:reset` then start again |
 
 ## Navigation

@@ -156,5 +156,5 @@ export const careerRoles: CareerRole[] = [
   },
 ]
 
-/** First four roles shown on the home page preview */
-export const careerRolesPreview = careerRoles.slice(0, 4)
+/** First eight roles shown on the jobs affected preview */
+export const careerRolesPreview = careerRoles.slice(0, 8)

@@ -1,77 +1,60 @@
+import ExplorePageHeader from '@/components/ExplorePageHeader'
+import JobsAffectedByAIGrid from '@/components/JobsAffectedByAIGrid'
 import ExploreScreenBackground from '@/components/ExploreScreenBackground'
-import { careerRoles } from '@/data/careerImpact'
 import { horizon } from '@/theme/colors'
-import { StyleSheet, Text, View } from 'react-native'
-
-function riskColor(level: string): string {
-  switch (level) {
-    case 'high':
-      return '#FB7185'
-    case 'medium':
-      return '#FB923C'
-    default:
-      return horizon.highlight
-  }
-}
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
+import { Pressable, StyleSheet, Text } from 'react-native'
 
 export default function JobsAffectedByAIScreen() {
+  const router = useRouter()
+
   return (
-    <ExploreScreenBackground>
-      <Text style={styles.intro}>
-        Career roles ranked by AI disruption exposure and automation potential.
-      </Text>
-      {careerRoles.map((role) => (
-        <View key={role.id} style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.role}>{role.role}</Text>
-            <Text style={[styles.risk, { color: riskColor(role.riskLevel) }]}>
-              {role.riskLevel === 'high'
-                ? 'High Risk'
-                : role.riskLevel === 'medium'
-                  ? 'Medium Risk'
-                  : 'Low Risk'}
-            </Text>
-          </View>
-          <View style={styles.barTrack}>
-            <View
-              style={[
-                styles.barFill,
-                { width: `${role.impactPercent}%`, backgroundColor: riskColor(role.riskLevel) },
-              ]}
-            />
-          </View>
-          <Text style={styles.percent}>{role.impactPercent}% AI impact exposure</Text>
-        </View>
-      ))}
+    <ExploreScreenBackground contentContainerStyle={styles.scrollContent}>
+      <ExplorePageHeader />
+
+      <Text style={styles.title}>Jobs Affected by AI Evolution</Text>
+      <Text style={styles.subtitle}>Click on any role to see detailed impact analysis</Text>
+
+      <JobsAffectedByAIGrid onRolePress={() => router.push('/(explore)/career-analyses')} />
+
+      <Pressable
+        style={styles.footerLink}
+        onPress={() => router.push('/(explore)/career-analyses')}
+      >
+        <Text style={styles.footerLinkText}>View all career analyses</Text>
+        <Ionicons name="chevron-forward" size={16} color={horizon.accent} />
+      </Pressable>
     </ExploreScreenBackground>
   )
 }
 
 const styles = StyleSheet.create({
-  intro: { fontSize: 15, lineHeight: 22, color: horizon.textSecondary, marginBottom: 16 },
-  card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: horizon.borderMuted,
-    backgroundColor: horizon.surface,
-    padding: 14,
-    marginBottom: 12,
+  scrollContent: {
+    paddingBottom: 40,
   },
-  cardHeader: {
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: horizon.textPrimary,
+  },
+  subtitle: {
+    marginTop: 4,
+    marginBottom: 16,
+    fontSize: 14,
+    lineHeight: 20,
+    color: horizon.textSecondary,
+  },
+  footerLink: {
+    marginTop: 24,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    justifyContent: 'center',
+    gap: 4,
   },
-  role: { fontSize: 16, fontWeight: '600', color: horizon.textPrimary, flex: 1 },
-  risk: { fontSize: 11, fontWeight: '600' },
-  barTrack: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: horizon.borderMuted,
-    overflow: 'hidden',
+  footerLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: horizon.accent,
   },
-  barFill: { height: '100%', borderRadius: 3 },
-  percent: { marginTop: 6, fontSize: 11, color: horizon.textSecondary },
 })

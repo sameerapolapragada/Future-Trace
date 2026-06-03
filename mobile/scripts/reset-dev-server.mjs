@@ -6,6 +6,8 @@ import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
+await import('./ensure-logo.mjs')
+
 try {
   const pids = execSync('lsof -ti:8081 2>/dev/null || true', { encoding: 'utf8' }).trim()
   if (pids) {
@@ -30,4 +32,4 @@ for (const dir of ['.expo', join('node_modules', '.cache')]) {
   }
 }
 
-console.log('Cleared .expo and Metro cache')
+console.log('Cleared .expo and Metro cache (logo files are kept)')

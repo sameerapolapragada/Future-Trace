@@ -2,32 +2,13 @@ import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
 import { type ColorValue } from 'react-native'
 import { colors } from '../../../theme/colors'
+import { horizon } from '../../../theme/colors'
 import { type as appType } from '../../../theme/typography'
-
-function ScoreTabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
-  return (
-    <Ionicons
-      name={focused ? 'disc' : 'disc-outline'}
-      size={size}
-      color={focused ? colors.title : color}
-    />
-  )
-}
 
 function HomeTabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
   return (
     <Ionicons
       name={focused ? 'home' : 'home-outline'}
-      size={size}
-      color={focused ? colors.title : color}
-    />
-  )
-}
-
-function TimelineTabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
-  return (
-    <Ionicons
-      name={focused ? 'time' : 'time-outline'}
       size={size}
       color={focused ? colors.title : color}
     />
@@ -72,28 +53,26 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="timeline"
         options={{
-          title: 'Timeline',
-          tabBarIcon: ({ focused, color, size }) => (
-            <TimelineTabIcon focused={focused} color={color} size={size} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
         name="score"
         options={{
-          title: 'Score',
+          title: 'Shield',
           tabBarIcon: ({ focused, color, size }) => (
-            <ScoreTabIcon focused={focused} color={color} size={size} />
+            <Ionicons
+              name={focused ? 'shield' : 'shield-outline'}
+              size={size}
+              color={focused ? horizon.accent : color}
+            />
           ),
         }}
       />
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search-outline" size={size} color={color} />
-          ),
+          href: null,
         }}
       />
       <Tabs.Screen
