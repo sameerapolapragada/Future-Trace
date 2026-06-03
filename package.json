@@ -6,20 +6,31 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "verify:signup-trigger": "tsx scripts/verify-signup-trigger.ts",
+    "verify:stripe-env": "tsx scripts/verify-stripe-env.ts",
+    "register:stripe-webhook": "tsx scripts/register-stripe-webhook.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.10.3",
+    "@supabase/supabase-js": "^2.106.2",
+    "dotenv": "^17.4.2",
+    "lucide-react": "^0.268.0",
+    "mammoth": "^1.12.0",
     "next": "14.0.0",
+    "pdf-parse": "^1.1.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "lucide-react": "0.268.0"
+    "stripe": "^22.2.0"
   },
   "devDependencies": {
-    "@types/react": "18.2.7",
     "@types/node": "20.4.2",
-    "typescript": "5.3.3",
-    "tailwindcss": "3.3.6",
+    "@types/pdf-parse": "^1.1.5",
+    "@types/react": "18.2.7",
+    "autoprefixer": "10.4.14",
     "postcss": "8.4.29",
-    "autoprefixer": "10.4.14"
+    "tailwindcss": "3.3.6",
+    "tsx": "^4.19.4",
+    "typescript": "5.3.3"
   }
 }

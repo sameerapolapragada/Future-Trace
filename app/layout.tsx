@@ -1,52 +1,67 @@
 import './globals.css'
-import type { ReactNode, Metadata } from 'react'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import type { ReactNode } from 'react'
+import PWARegister from '../components/PWARegister'
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
-  title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-  description: 'Explore how AI evolved from symbolic systems and machine learning to transformers, generative AI, RAG, AI agents, and multi-agent systems. An educational timeline of AI breakthroughs from 1950s to 2030s.',
-  keywords: 'AI evolution, artificial intelligence, machine learning, deep learning, transformers, generative AI, RAG, AI agents, multi-agent systems',
-  author: 'Future Trace',
+  title: 'Future Trace - Career Intelligence for the AI Age',
+  description:
+    'Future Trace — Career Intelligence for the AI Age. Analyze job vulnerability, explore AI evolution, and build career resilience with personalized scoring.',
+  keywords:
+    'Future Trace, career intelligence, AI age, job automation risk, career insulation, resume vulnerability score, artificial intelligence timeline',
+  authors: [{ name: 'Future Trace' }],
   viewport: 'width=device-width, initial-scale=1',
   openGraph: {
-    title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-    description: 'Explore how AI evolved from symbolic systems and machine learning to transformers, generative AI, RAG, AI agents, and multi-agent systems.',
+    title: 'Future Trace - Career Intelligence for the AI Age',
+    description: 'Career Intelligence for the AI Age — analyze, adapt, and protect your professional path.',
     type: 'website',
     url: 'https://future-trace.com',
     siteName: 'Future Trace',
-    locale: 'en_US'
+    locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Evolution Timeline: From Rule-Based AI to AI Agents',
-    description: 'Educational timeline of AI breakthroughs from 1950s to 2030s'
-  }
+    title: 'Future Trace - Career Intelligence for the AI Age',
+    description: 'Career Intelligence for the AI Age — analyze, adapt, and protect your professional path.',
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'EducationalWebpage',
-    name: 'AI Evolution Timeline',
-    description: 'An educational resource explaining the evolution of artificial intelligence from rule-based systems to multi-agent systems.',
+    '@type': 'WebApplication',
+    name: 'Future Trace',
+    description: 'Career Intelligence for the AI Age — analyze job vulnerability and build career resilience.',
     inLanguage: 'en-US',
+    applicationCategory: 'BusinessApplication',
     author: {
       '@type': 'Organization',
-      name: 'Future Trace'
-    }
+      name: 'Future Trace',
+    },
   }
 
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>
-        <main className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-          {children}
-        </main>
+      <body className={`${inter.className} min-h-screen font-sans text-textPrimary antialiased`}>
+        <PWARegister />
+        <div className="relative z-[1] flex min-h-screen w-full flex-col">
+          <main className="min-h-screen w-full flex-1 px-4 py-8 sm:px-6 md:px-8 lg:px-12 sm:py-10 md:py-12">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   )

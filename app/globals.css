@@ -2,10 +2,221 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #__next {
-  height: 100%;
+@layer base {
+  :root {
+    /* Future Trace logo palette */
+    --horizon-page-gradient: #000000;
+    --horizon-background: #000000;
+    --horizon-surface: #0f172a;
+    --horizon-border-muted: #334155;
+    --horizon-text-primary: #f8fafc;
+    --horizon-text-secondary: #94a3b8;
+    --horizon-accent: #fdbb2d;
+    --horizon-accent-hover: #e85d04;
+    --horizon-accent-muted: rgba(253, 187, 45, 0.14);
+    --horizon-accent-gradient: linear-gradient(135deg, #fdbb2d 0%, #e85d04 100%);
+    --horizon-highlight: #22d3ee;
+    --horizon-highlight-hover: #06b6d4;
+    --horizon-highlight-muted: rgba(34, 211, 238, 0.14);
+
+    /* Legacy trace aliases */
+    --trace-background: var(--horizon-background);
+    --trace-surface: var(--horizon-surface);
+    --trace-surface-raised: #0f172a;
+    --trace-card: var(--horizon-surface);
+    --trace-foreground: var(--horizon-text-primary);
+    --trace-muted: var(--horizon-text-secondary);
+    --trace-accent: var(--horizon-accent);
+    --trace-accent-hover: var(--horizon-accent-hover);
+    --trace-accent-glow: #fdbb2d;
+    --trace-accent-deep: #e85d04;
+    --trace-border: var(--horizon-border-muted);
+
+    /* Status badges */
+    --status-success-bg: rgba(34, 211, 238, 0.12);
+    --status-success-border: #22d3ee;
+    --status-success-text: #67e8f9;
+    --status-warning-bg: rgba(253, 187, 45, 0.12);
+    --status-warning-border: #fdbb2d;
+    --status-warning-text: #fcd34d;
+    --status-anomaly-bg: rgba(239, 68, 68, 0.12);
+    --status-anomaly-border: #ef4444;
+    --status-anomaly-text: #fca5a5;
+
+    /* PWA aliases */
+    --pwa-background: #000000;
+    --pwa-accent: var(--horizon-accent);
+    --pwa-accent-emerald: var(--horizon-highlight);
+    --pwa-card: var(--horizon-surface);
+    --pwa-card-border: var(--horizon-border-muted);
+    --pwa-foreground: var(--horizon-text-primary);
+    --pwa-muted: var(--horizon-text-secondary);
+  }
+
+  html {
+    height: 100%;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background-color: #000000;
+  }
+
+  body {
+    position: relative;
+    min-height: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    background-color: #000000;
+    color: var(--horizon-text-primary);
+    font-family: var(--font-inter), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: -0.011em;
+  }
+
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']),
+  textarea,
+  select {
+    color-scheme: dark;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0 1000px #0f172a inset;
+    -webkit-text-fill-color: var(--horizon-text-primary);
+    caret-color: var(--horizon-highlight);
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  #__next {
+    min-height: 100%;
+  }
 }
 
-body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+@layer components {
+  .horizon-card {
+    @apply rounded-2xl border border-borderMuted shadow-horizon backdrop-blur-md;
+    background: var(--horizon-surface);
+  }
+
+  .horizon-card-padded {
+    @apply horizon-card p-6 sm:p-8;
+  }
+
+  .horizon-input {
+    @apply rounded-xl border border-borderMuted text-textPrimary outline-none backdrop-blur-sm transition-all duration-200;
+    background: #0f172a;
+  }
+
+  .horizon-input::placeholder {
+    @apply text-slate-500;
+  }
+
+  .horizon-input:focus {
+    @apply border-highlight ring-2 ring-cyan-400/25;
+  }
+
+  .horizon-interactive {
+    @apply transition-all duration-200;
+  }
+
+  .horizon-nav-active {
+    @apply bg-accentMuted text-accent;
+  }
+
+  .horizon-milestone-active {
+    @apply bg-accentMuted shadow-horizon-md;
+    border-color: rgba(253, 187, 45, 0.45);
+  }
+
+  .horizon-badge-active {
+    @apply bg-accentMuted text-accent;
+    border-color: rgba(253, 187, 45, 0.35);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-semibold text-slate-950 transition-all duration-200 active:scale-[0.98];
+    background: var(--horizon-accent-gradient);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.06);
+  }
+
+  .btn-primary:disabled {
+    @apply cursor-not-allowed opacity-60;
+  }
+
+  .trace-panel,
+  .trace-panel-raised {
+    @apply horizon-card-padded;
+  }
+
+  .trace-input {
+    @apply horizon-input;
+  }
+
+  .badge-status-success {
+    background-color: var(--status-success-bg);
+    border: 1px solid var(--status-success-border);
+    color: var(--status-success-text);
+  }
+
+  .badge-status-warning {
+    background-color: var(--status-warning-bg);
+    border: 1px solid var(--status-warning-border);
+    color: var(--status-warning-text);
+  }
+
+  .badge-status-anomaly {
+    background-color: var(--status-anomaly-bg);
+    border: 1px solid var(--status-anomaly-border);
+    color: var(--status-anomaly-text);
+  }
+
+  .alert-success {
+    @apply badge-status-success rounded-xl px-4 py-3 text-sm;
+  }
+
+  .alert-warning {
+    @apply badge-status-warning rounded-xl px-4 py-3 text-sm;
+  }
+
+  .alert-anomaly {
+    @apply badge-status-anomaly rounded-xl px-4 py-3 text-sm;
+  }
+
+  .pwa-card {
+    @apply horizon-card-padded;
+  }
+
+  .pwa-cta {
+    @apply btn-primary;
+  }
+
+  .link-primary {
+    @apply font-medium text-accent transition-all duration-200;
+  }
+
+  .link-primary:hover {
+    color: var(--horizon-accent-hover);
+  }
+}
+
+@layer utilities {
+  .safe-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
 }
